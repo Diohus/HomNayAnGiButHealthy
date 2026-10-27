@@ -8,6 +8,7 @@ from app.nutrition.schemas import (
     Diet,
     ExpertLimits,
     Goal,
+    HealthLimits,
     HealthProfileIn,
     LowEnergyNotAcknowledged,
     NutritionNeeds,
@@ -15,6 +16,6 @@ from app.nutrition.schemas import (
 )
 
 __all__ = [
-    "ActivityLevel", "Allergen", "Condition", "Diet", "ExpertLimits", "Goal", "HealthProfileIn",
+    "ActivityLevel", "Allergen", "Condition", "Diet", "ExpertLimits", "Goal", "HealthLimits", "HealthProfileIn",
     "LowEnergyNotAcknowledged", "NutritionNeeds", "Sex", "compute_needs",
 ]

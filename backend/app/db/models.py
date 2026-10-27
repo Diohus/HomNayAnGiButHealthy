@@ -58,13 +58,17 @@ class HealthProfile(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now)
 
 
-class ExpertConfirmation(Base):
-    __tablename__ = "expert_confirmations"
+class HealthLimit(Base):
+    """Giới hạn sức khỏe do người dùng cung cấp (thay bảng expert_confirmations từ vòng 4)."""
+
+    __tablename__ = "health_limits"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[uuid.UUID] = _uid()
-    condition_code: Mapped[str] = mapped_column(String(32))
-    encrypted_limits: Mapped[bytes] = mapped_column(LargeBinary)
+    condition_code: Mapped[str | None] = mapped_column(String(32), nullable=True)  # NULL = áp dụng chung
+    encrypted_payload: Mapped[bytes] = mapped_column(LargeBinary)  # HealthLimits
+    source: Mapped[str] = mapped_column(String(16), default="manual")  # manual | document
     confirmed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    # NULL không bị UNIQUE chặn ⇒ upsert theo (user, condition) do service đảm bảo
     __table_args__ = (UniqueConstraint("user_id", "condition_code"),)
 
 
@@ -164,6 +168,32 @@ class Recipe(Base):
     meal_id: Mapped[int] = mapped_column(Integer, ForeignKey("meals.id", ondelete="CASCADE"), unique=True)
     content: Mapped[dict] = mapped_column(JSON)  # steps, seasonings, tip
     source: Mapped[str] = mapped_column(String(16))  # llm | template
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class FoodPreference(Base):
+    """Món / nguyên liệu không thích (ràng buộc mềm của planner). Không phải dữ liệu sức khỏe ⇒ không mã hóa."""
+
+    __tablename__ = "food_preferences"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[uuid.UUID] = _uid()
+    kind: Mapped[str] = mapped_column(String(8))  # food | dish
+    code: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    __table_args__ = (UniqueConstraint("user_id", "kind", "code"),)
+
+
+class IntakeEntry(Base):
+    """Nhật ký "đã ăn". Không mã hóa — nhất quán với menu_days (món + gram, không phải hồ sơ sức khỏe)."""
+
+    __tablename__ = "intake_entries"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[uuid.UUID] = _uid()
+    day: Mapped[date] = mapped_column(Date, index=True)
+    slot: Mapped[str] = mapped_column(String(16))  # breakfast | lunch | dinner | snack
+    food_code: Mapped[str] = mapped_column(String(64))
+    grams: Mapped[float] = mapped_column(Float)
+    source: Mapped[str] = mapped_column(String(16))  # plan | chat | manual | ai_estimate
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 

@@ -50,6 +50,40 @@ Mọi mục dưới đây là **giả định sản phẩm hoặc kỹ thuật**
 | C9 | Tiếng Anh: alias tay ngắn gọn (`seed/catalog.py` `ALIASES_EN`) + alias tự sinh từ `name_en` (phần trước dấu phẩy, bỏ ngoặc). “fish” chung chung ⇒ cá tra/basa (như “cá kho”). Câu tiếng Anh không dấu được so khớp cả với alias tiếng Việt không dấu, nên một số từ trùng hiếm gặp (vd tên “Tom” ≡ “tôm”) có thể bị hiểu nhầm | `foods/matching.py` |
 | C10 ⚠ | Cụm từ guardrail rối loạn ăn uống tiếng Anh (“starve myself”, “skip meals”, “make myself throw up”, “laxatives to lose weight”…) là danh sách tối thiểu; cố ý **không** dùng “starving” đứng một mình (nghĩa thông dụng là “rất đói”) | `guardrails/eating_disorder.py` |
 
+## Hiểu món ăn bằng LLM (vòng 5) ⚠
+
+| # | Giả định | Vị trí |
+|---|---|---|
+| K1 | Khớp alias **trọn cụm** ⇒ không gọi LLM. Mention chỉ khớp một phần (“bún bò huế” ⇒ “bún”, “bò”) hoặc không khớp ⇒ LLM chọn trong top-25 nguyên liệu + top-10 món (difflib + tỉ lệ token trùng, bỏ dấu). Từ chỉ số lượng/đơn vị (“2 cây kem”) không tính là “khớp một phần” | `foods/resolve.py`, `chat/engine.py` `_partial` |
+| K2 | Mã chỉ được chọn trong enum dựng động mỗi lần gọi; mã ngoài enum ⇒ kết quả bị loại (retry giới hạn) ⇒ giữ hành vi cũ (`need_label`). LLM tắt/lỗi ⇒ như cũ | `foods/resolve.py` |
+| K3 ⚠ | Độ tin cậy < 0,6 ⇒ hỏi lại kèm nút chọn nhanh (tối đa 4 lựa chọn). Ngưỡng là giả định | `foods/resolve.py` `CLARIFY_BELOW` |
+| K4 ⚠ | Món ghép (vd bún bò huế) ⇒ AI ước tính **khối lượng nguyên liệu** cho 1 phần (sai số cao), kẹp trong [min_g, 2×max_g], tối đa 6 thành phần; dinh dưỡng vẫn tính từ CSDL. Món ghép chiếm trọn một bữa (bữa đó không thêm món chính/nguyên liệu khác) và gắn nhãn “AI ước tính” | `foods/resolve.py`, `planner/solver.py` |
+| K5 | Thành phần món ghép bị dị ứng/chế độ ăn loại ⇒ từ chối cả món và nêu thành phần | `chat/engine.py` |
+| K6 | Cache LRU 2000 mục, khóa = (mention chuẩn hóa, ngôn ngữ, phiên bản catalog = hash các mã); không chứa user_id hay dị ứng. Mất khi khởi động lại; mỗi tiến trình một cache | `foods/resolve.py` |
+| K7 | “I don't like fish” ⇒ “cá” chung chung được hiểu là cá tra/basa (như C9); chưa hỗ trợ “không thích cả nhóm” (mọi loại cá) | `foods/matching.py` |
+
+## Đổi bữa và món không thích (vòng 5)
+
+| # | Giả định | Vị trí |
+|---|---|---|
+| S1 | Đổi một bữa: các bữa khác giữ nguyên tuyệt đối (khóa đúng slot); cấm món hiện tại, món của các bữa khác trong ngày, món không thích, món lặp quá 3 ngày. Phần nguyên liệu có sẵn đang ở bữa này được phân bổ lại trong bữa mới. Không còn món ⇒ 409 `NO_ALTERNATIVE` | `services/menu.py` `swap` |
+| S2 ⚠ | Không thích là ràng buộc **mềm**: phạt 30 (bữa thiếu món chính phạt 50), nên khi buộc phải chọn thì vẫn dùng và báo `USED_DISLIKED:<mã>`. Món có nguyên liệu chính bị “không thích” cũng bị phạt | `planner/solver.py` `DISLIKE_PENALTY` |
+| S3 | Câu nói về **dị ứng** trong chat không bao giờ tự sửa hồ sơ (dữ liệu sức khỏe, ràng buộc cứng): chatbot hướng dẫn vào Hồ sơ. Câu “không thích” chỉ thành đề xuất, người dùng bấm Áp dụng mới lưu | `chat/engine.py`, `chat/parser.py` |
+| S4 | “Không thích” chỉ lưu mã có trong catalog. Thứ chưa có (vd “hành” — chỉ là gia vị trong công thức) được trả lời rõ là chưa thể loại khỏi thực đơn | `services/preferences.py` |
+
+## Nhật ký đã ăn, cân lại, đi chợ (vòng 6)
+
+| # | Giả định | Vị trí |
+|---|---|---|
+| L1 | `intake_entries` **không mã hóa** (món + gram + bữa), nhất quán với `menu_days`; xóa theo tài khoản (CASCADE) | `db/models.py` |
+| L2 | Đánh dấu “đã ăn” chép đúng item kế hoạch của bữa (source=plan); bỏ đánh dấu xóa các bản ghi đó. Món ngoài kế hoạch vẫn phải qua bộ lọc dị ứng/chế độ ăn | `services/intake.py` |
+| L3 ⚠ | Cân lại: bữa đã ăn giữ nguyên theo nhật ký; món ngoài kế hoạch khóa như ăn vặt; mỗi bữa còn lại ≥ 50 % phần năng lượng của nó (phạt rất nặng nếu thấp hơn); đã bị gắn cờ rối loạn ăn uống thì **không** cắt giảm (409 `ED_SUPPORT`); vượt mục tiêu ⇒ các bữa còn lại về mức sàn + cảnh báo, **không** tự bù sang ngày sau | `services/intake.py` `rebalance` |
+| L4 | Chat “đã ăn” (thì quá khứ): đề xuất ghi nhật ký + đề xuất cân lại riêng; chưa có bản xem trước thực đơn sau khi cân lại. Không nói lượng ⇒ 1 khẩu phần (`portion`) hoặc khoảng giữa min–max của nguyên liệu; bữa theo giờ (< 11h sáng, < 16h trưa, còn lại tối) | `chat/engine.py` `_log` |
+| L5 | Đi chợ: cộng mọi item của các bữa đang dùng (kể cả phần lấy từ đồ có sẵn) × số người, **rồi** trừ đồ có sẵn của các ngày đó (không âm) — đúng cả khi nấu cho nhiều người; bỏ đồ nhập từ nhãn. Làm tròn **lên**: trứng theo quả (≈ 50 g/quả — giả định), đồ có `portion` theo khẩu phần USDA, còn lại bội số 50 g (tối thiểu 100 g), dầu ăn bội số 10 g | `services/shopping.py` |
+| L6 | “Không thích” dạng chữ (≤ 40 ký tự, vd “hành”): planner bỏ qua; công thức AI và mẫu tránh từ này (so khớp theo từ; gõ có dấu thì so có dấu để “hành” ≠ “hạnh nhân”) | `services/preferences.py`, `ai/recipes.py` |
+| L7 | ≥ 2 alias liền kề (“phở bò”, “bánh mì trứng”) ⇒ gửi cả cụm cho LLM như ứng viên món ghép; LLM trả nguyên liệu rời thì giữ khớp cũ | `chat/engine.py` `_partial` |
+| L8 | Cache `parse()` LRU 1000 (khóa = văn bản chuẩn hóa + ngôn ngữ), không cache câu có tín hiệu rối loạn ăn uống/dị ứng. Thời gian từng bước LLM ghi log DEBUG, không kèm nội dung | `chat/parser.py`, `ai/service.py` |
+
 ## Dị ứng trong công thức AI ⚠
 
 Danh sách từ khóa cấm theo dị ứng/chế độ ăn (`ai/recipes.py`: `FORBIDDEN_TERMS` tiếng Việt, `FORBIDDEN_TERMS_EN` tiếng Anh) là **tối thiểu, cần chuyên gia dinh dưỡng/dị ứng mở rộng** trước khi mời người dùng thật. Công thức ở ngôn ngữ nào cũng phải qua **cả hai** bộ từ khóa; con số khối lượng/năng lượng (kể cả tbsp, tsp, cup, oz, lb) bị từ chối. Bộ lọc dựa trên từ khóa nên không bắt được cách diễn đạt gián tiếp; dị ứng vẫn được đảm bảo chủ yếu bởi bộ lọc nguyên liệu (`foods/restrictions.py`), công thức chỉ là văn bản hướng dẫn.
@@ -58,9 +92,25 @@ Danh sách từ khóa cấm theo dị ứng/chế độ ăn (`ai/recipes.py`: `F
 
 Ngưỡng phát hiện (`guardrails/eating_disorder.py`): ≥3 lần đặt mục tiêu dưới sàn trong 14 ngày; ≥5 lần bấm giảm khi đã đạt mục tiêu (±5%) trong 1 ngày; >2 lần bù cheat day trong 14 ngày; ≥2 câu chat muốn nhịn ăn/bỏ bữa trong 14 ngày; 1 câu thể hiện hành vi nguy hiểm (gây nôn, dùng thuốc xổ để giảm cân). Danh sách cụm từ còn tối thiểu. Khi bị gắn cờ: không cắt giảm thêm, không bù cheat day, hiển thị thông điệp hỗ trợ (không kèm số hotline, vì chưa xác minh được số chính thức).
 
-## Bệnh nền nhạy cảm (người dùng đã chọn “chặn và chờ số liệu”)
+## Bệnh nền nhạy cảm — tự quản lý (định hướng v2, từ vòng 4)
 
-Với bệnh thận, tim mạch, gan, mang thai, cho con bú: ứng dụng **không tự đặt giới hạn an toàn**. Thực đơn chỉ được sinh sau khi người dùng xác nhận đã tham khảo chuyên gia **và** nhập ít nhất một giới hạn (năng lượng, đạm, natri, kali hoặc phốt pho tối đa). Planner áp các giới hạn này dưới dạng ràng buộc tối đa.
+Ứng dụng **không chuyên về y tế, không có bác sĩ theo dõi**; thực đơn chỉ là gợi ý và có sai số. (Thay cho chính sách cũ “chặn và chờ chuyên gia xác nhận”.)
+
+| # | Giả định | Vị trí |
+|---|---|---|
+| H1 ⚠ | Có bệnh thận, tim mạch, gan, mang thai hoặc cho con bú ⇒ người dùng **xác nhận một lần** là tự quản lý (`acknowledge_self_managed`), sau đó được sinh thực đơn bình thường | `services/profile.py` `save_profile` |
+| H2 ⚠ | Ứng dụng **không tự đặt giới hạn y khoa**. Chưa có giới hạn do người dùng cung cấp ⇒ dùng mục tiêu chung như người khỏe + notice `NO_LIMITS_<BỆNH>` ở màn Hôm nay và Hồ sơ. Giới hạn “áp dụng chung” (không gắn bệnh nào) được coi là đã có giới hạn cho mọi bệnh | `guardrails/medical.py` |
+| H3 | Nhiều giới hạn ⇒ lấy giá trị **chặt nhất** cho từng chỉ số; nguồn hiển thị “Do người dùng cung cấp (nhập tay / trích từ tài liệu)” | `services/profile.py` `merged_limits` |
+| H4 ⚠ | Giới hạn carb/chất béo làm thiếu năng lượng ⇒ chỉ dồn phần thiếu sang chất còn chỗ **trong AMDR và trong giới hạn của người dùng**; vẫn thiếu ⇒ hạ mục tiêu năng lượng và báo `LIMITS_REDUCE_ENERGY` (không bù ngoài AMDR) | `nutrition/calculator.py` |
+| H5 | Khoảng hợp lệ của giới hạn (vd carb 20–600 g, chất béo 10–300 g, natri ≤ 6000 mg) chỉ để chặn gõ nhầm/đọc sai, **không** phải khuyến nghị y khoa | `nutrition/schemas.py` `HealthLimits` |
+
+## Trích xuất giới hạn từ ảnh/văn bản bằng AI ⚠
+
+- AI (LLM vision) **có thể đọc sai**. Kết quả luôn là **bản nháp**: mỗi giá trị kèm trích dẫn nguyên văn; người dùng phải duyệt/sửa rồi mới lưu. Không có bước nào tự lưu.
+- Hậu kiểm bằng code, không tin LLM: quy đổi đơn vị xác định (natri mmol × 23, kali mmol × 39,1, phốt pho mmol × 30,97, g ↔ mg); giá trị ngoài khoảng hợp lệ bị loại; với văn bản dán vào, **trích dẫn phải có thật** trong văn bản (so sánh sau khi bỏ dấu, dấu câu, khoảng trắng). Với ảnh không đối chiếu được trích dẫn — người dùng tự so với ảnh gốc.
+- “Muối” (NaCl) được quy đổi **xác định** sang natri: 1 g muối = 393 mg natri (NaCl chứa 39,3 % natri theo khối lượng). LLM trả `unit=g_salt`, code nhân hệ số; giao diện ghi “quy đổi từ … g muối”. `g_salt` chỉ hợp lệ cho natri.
+- Chỉ dẫn không định lượng được (vd “hạn chế đồ chiên”) chỉ hiển thị, **không** thành ràng buộc của bộ tối ưu.
+- Quyền riêng tư: cần đồng ý rõ ràng; ảnh/văn bản chỉ nằm trong bộ nhớ của request, không lưu, không log; ảnh bị xóa metadata (EXIF/GPS) trước khi gửi nhà cung cấp AI.
 
 ## Kỹ thuật và bảo mật
 
@@ -72,6 +122,6 @@ Với bệnh thận, tim mạch, gan, mang thai, cho con bú: ứng dụng **kh�
 | T4 | Refresh token lưu trong `localStorage` (rủi ro nếu bị XSS); access token chỉ giữ trong bộ nhớ, sống 15 phút | Nâng cấp sau: cookie httpOnly |
 | T5 | HTTPS do Caddy đảm nhiệm; nginx và Caddy tắt access log | |
 | T6 | Server dùng giờ `Asia/Ho_Chi_Minh` để xác định “hôm nay” cho chatbot | `docker-compose.yml` |
-| T7 | Rate limit **in-memory, giả định chạy một instance backend (một worker uvicorn)**. Nhiều instance/worker ⇒ mỗi tiến trình đếm riêng, cần chuyển sang kho dùng chung (Redis). Khởi động lại ⇒ bộ đếm về 0. Ngưỡng: đăng nhập sai 5 lần/15 phút theo (email, IP) **và** 30 lần sai/15 phút theo IP trên mọi email (chống credential stuffing), chỉ đếm lần sai, đăng nhập đúng chỉ xóa bộ đếm (email, IP), không xóa bộ đếm theo IP; đăng ký 10/giờ/IP; chat 20/phút/người; công thức AI 10/phút/người | `core/ratelimit.py` |
+| T7 | Rate limit (thêm: đọc tài liệu bằng AI 5 lần/giờ/người) **in-memory, giả định chạy một instance backend (một worker uvicorn)**. Nhiều instance/worker ⇒ mỗi tiến trình đếm riêng, cần chuyển sang kho dùng chung (Redis). Khởi động lại ⇒ bộ đếm về 0. Ngưỡng: đăng nhập sai 5 lần/15 phút theo (email, IP) **và** 30 lần sai/15 phút theo IP trên mọi email (chống credential stuffing), chỉ đếm lần sai, đăng nhập đúng chỉ xóa bộ đếm (email, IP), không xóa bộ đếm theo IP; đăng ký 10/giờ/IP; chat 20/phút/người; công thức AI 10/phút/người | `core/ratelimit.py` |
 | T8 | IP người dùng lấy từ `X-Forwarded-For` qua chuỗi Caddy → nginx → backend (uvicorn `--proxy-headers --forwarded-allow-ips=*`). Chỉ an toàn vì cổng backend **không** mở ra ngoài mạng Docker | `Dockerfile`, `nginx.conf` |
 | T9 | Refresh token đã thu hồi bị dùng lại ⇒ coi như bị đánh cắp, thu hồi mọi phiên của người dùng (kể cả thiết bị khác). **Khoảng ân hạn 30 giây** sau khi xoay vòng (`refresh_tokens.rotated_at`): dùng lại trong 30 s (các request song song của cùng client) chỉ bị từ chối 401, không thu hồi gì. Quá 30 s, hoặc token đã bị thu hồi do đăng xuất ⇒ thu hồi toàn bộ. Frontend gộp các lần refresh (single-flight trong tab + Web Locks giữa các tab) để không chạm cơ chế này khi dùng bình thường | `api/routes.py` `refresh`, `frontend/src/api/client.ts` |

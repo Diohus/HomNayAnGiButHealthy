@@ -73,3 +73,19 @@ describe("thông báo lỗi theo code", () => {
 
   it("fmt giữ nguyên placeholder thiếu giá trị", () => expect(fmt("{a} {b}", { a: 1 })).toBe("1 {b}"));
 });
+
+describe("vòng 4: giới hạn sức khỏe", () => {
+  it("nhãn cho mọi chỉ số giới hạn và notice NO_LIMITS cho mọi bệnh nền nhạy cảm", async () => {
+    const { LIMIT_FIELDS, SENSITIVE_CONDITIONS } = await import("../types");
+    for (const d of [vi, en]) {
+      for (const f of LIMIT_FIELDS) expect(d.settings.limits[f], f).toBeTruthy();
+      for (const c of SENSITIVE_CONDITIONS) expect(d.notices[`NO_LIMITS_${c.toUpperCase()}`], c).toBeTruthy();
+    }
+  });
+
+  it("SELF_MANAGED_ACK_REQUIRED điền tên bệnh nền đã dịch từ params", () => {
+    const e = new ApiError(409, "SELF_MANAGED_ACK_REQUIRED", "", {
+      code: "SELF_MANAGED_ACK_REQUIRED", conditions: ["kidney"], params: { conditions: "kidney disease" } });
+    expect(errorMessage(e, en)).toContain("(kidney disease)");
+  });
+});

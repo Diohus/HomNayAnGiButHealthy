@@ -1,7 +1,8 @@
 import uuid
 from datetime import UTC, date, datetime, timedelta
+from typing import Literal
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
@@ -24,12 +25,16 @@ from app.core.security import (
 from app.db import models as M
 from app.db.session import get_session
 from app.guardrails.medical import menu_notices
-from app.nutrition import ExpertLimits, HealthProfileIn
+from app.nutrition import HealthLimits, HealthProfileIn
 from app.nutrition.schemas import Condition
 from app.services import chat as CS
 from app.services import foods as FS
+from app.services import intake as IN
+from app.services import limits_extract as LX
 from app.services import menu as MS
+from app.services import preferences as PREF
 from app.services import profile as P
+from app.services import shopping as SH
 
 router = APIRouter(prefix="/api")
 LANG = Depends(get_lang)  # ngôn ngữ phản hồi theo Accept-Language (singleton để tránh B008)
@@ -138,22 +143,59 @@ def put_profile(body: HealthProfileIn, uid: uuid.UUID = Depends(current_user), s
 
 @router.get("/needs")
 def needs(uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session), lang: Lang = LANG):
-    p, n, blocked = P.current_needs(s, uid, lang)
-    return {"needs": n.model_dump(), "notices": menu_notices(p.conditions, p.uses_insulin_or_glucose_meds, lang),
-            "expert_confirmation_required": blocked}
+    p, n, no_limits = P.current_needs(s, uid, lang)
+    return {"needs": n.model_dump(),
+            "notices": menu_notices(p.conditions, p.uses_insulin_or_glucose_meds, lang, no_limits),
+            "conditions_without_limits": no_limits}
 
 
-class ExpertIn(BaseModel):
-    condition: Condition
-    confirmed_consulted_expert: bool
-    limits: ExpertLimits
+# ---------------- giới hạn sức khỏe do người dùng cung cấp ----------------
+class HealthLimitIn(BaseModel):
+    condition: Condition | None = None  # None = áp dụng chung
+    limits: HealthLimits
+    source: Literal["manual", "document"] = "manual"
 
 
-@router.post("/expert-confirmations", status_code=204)
-def expert(body: ExpertIn, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session)):
-    if not body.confirmed_consulted_expert:
-        raise AppError(422, "CONFIRMATION_REQUIRED")
-    P.confirm_expert(s, uid, body.condition.value, body.limits)
+@router.get("/health-limits")
+def get_health_limits(uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session)):
+    return P.list_limits(s, uid)
+
+
+@router.put("/health-limits")
+def put_health_limits(body: HealthLimitIn, uid: uuid.UUID = Depends(current_user),
+                      s: Session = Depends(get_session)):
+    lid = P.upsert_limits(s, uid, body.condition.value if body.condition else None, body.limits, body.source)
+    return next(x for x in P.list_limits(s, uid) if x["id"] == lid)
+
+
+@router.delete("/health-limits/{limit_id}", status_code=204)
+def delete_health_limit(limit_id: int, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session)):
+    P.delete_limit(s, uid, limit_id)
+
+
+_FILE = File(None)
+_TEXT = Form(None)
+_CONSENT = Form(False)
+
+
+@router.post("/health-limits/extract")
+def extract_health_limits(file: UploadFile | None = _FILE, text: str | None = _TEXT, consent_ai_processing: bool = _CONSENT,
+                          uid: uuid.UUID = Depends(current_user), lang: Lang = LANG):
+    """Đọc ảnh/văn bản chỉ định của bác sĩ bằng LLM ⇒ BẢN NHÁP (không lưu gì). Người dùng duyệt rồi PUT /health-limits."""
+    if not consent_ai_processing:
+        raise AppError(422, "AI_CONSENT_REQUIRED")
+    image = file.file.read(LX.MAX_IMAGE_BYTES + 1) if file is not None else None
+    text = (text or "").strip() or None
+    if (image is None) == (text is None):  # đúng MỘT nguồn: ảnh hoặc văn bản
+        raise AppError(422, "EXTRACT_INPUT_REQUIRED")
+    if text is not None and len(text) > LX.MAX_TEXT_CHARS:
+        raise AppError(422, "TEXT_TOO_LONG", params={"max": LX.MAX_TEXT_CHARS})
+    # kiểm tra + bỏ metadata ảnh trước khi tính lượt (ảnh hỏng không tốn lượt); ảnh chỉ nằm trong bộ nhớ
+    image_b64 = LX.prepare_image(image) if image is not None else None
+    limiter.hit(f"extract:{uid}", *RL.EXTRACT)  # mỗi lần gọi LLM vision trả phí
+    settings = get_settings()
+    return LX.extract(get_provider(settings), text=text, image_b64=image_b64, lang=lang,
+                      max_retries=settings.llm_max_retries)
 
 
 # ---------------- nguyên liệu ----------------
@@ -186,10 +228,13 @@ def _menu_out(s: Session, uid: uuid.UUID, day: date, lang: Lang = "vi") -> dict 
     plan = MS.to_plan(md, c.full, c.tol)
     recipes = {m.slot: {**m.recipe.content, "source": m.recipe.source} for m in md.meals if m.recipe and m.active}
     inactive = [m.slot for m in md.meals if not m.active]
+    intake = IN.summary(s, uid, day, c.full)
     return {"day": day.isoformat(), "version": md.version, "plan": plan.model_dump(mode="json"),
             "targets": md.targets, "recipes": recipes, "inactive_meals": inactive,
+            "intake": {"entries": intake["entries"], "totals": intake["totals"]},
+            "eaten_slots": intake["eaten_slots"],
             "energy_adjustment_kcal": MS.energy_delta(s, uid, day),
-            "notices": menu_notices(c.profile.conditions, c.profile.uses_insulin_or_glucose_meds, lang)}
+            "notices": menu_notices(c.profile.conditions, c.profile.uses_insulin_or_glucose_meds, lang, c.no_limits)}
 
 
 @router.get("/menu")
@@ -237,6 +282,89 @@ def unlock(day: date, body: UnlockIn, uid: uuid.UUID = Depends(current_user), s:
     return _menu_out(s, uid, day, lang)
 
 
+# ---------------- nhật ký "đã ăn" ----------------
+class EatenIn(BaseModel):
+    eaten: bool
+
+
+@router.post("/menu/{day}/meals/{slot}/eaten")
+def eaten(day: date, slot: str, body: EatenIn, uid: uuid.UUID = Depends(current_user),
+          s: Session = Depends(get_session), lang: Lang = LANG):
+    IN.mark_eaten(s, uid, day, slot, body.eaten)
+    return _menu_out(s, uid, day, lang)
+
+
+class IntakeIn(BaseModel):
+    day: date
+    slot: Literal["breakfast", "lunch", "dinner", "snack"]
+    food_code: str = Field(min_length=1, max_length=64)
+    grams: float
+
+
+@router.get("/intake")
+def get_intake(day: date, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session)):
+    c = MS.Ctx(s, uid)
+    return IN.summary(s, uid, day, c.full)
+
+
+@router.post("/intake", status_code=201)
+def add_intake(body: IntakeIn, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session)):
+    return {"id": IN.add_entry(s, uid, body.day, body.slot, body.food_code, body.grams, "manual")}
+
+
+@router.delete("/intake/{entry_id}", status_code=204)
+def delete_intake(entry_id: int, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session)):
+    IN.delete_entry(s, uid, entry_id)
+
+
+@router.post("/menu/{day}/rebalance")
+def rebalance(day: date, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session),
+              lang: Lang = LANG):
+    """Cân lại các bữa CHƯA ăn theo nhật ký thực tế (giữ sàn mỗi bữa, tôn trọng guardrail rối loạn ăn uống)."""
+    limiter.hit(f"swap:{uid}", *RL.SWAP)  # cùng hạn mức với đổi bữa (đều chạy solver)
+    IN.rebalance(s, uid, day)
+    return _menu_out(s, uid, day, lang)
+
+
+# ---------------- danh sách đi chợ ----------------
+@router.get("/shopping-list")
+def shopping_list(start: date, days: int = 1, servings: int = 1, uid: uuid.UUID = Depends(current_user),
+                  s: Session = Depends(get_session), lang: Lang = LANG):
+    return SH.shopping_list(s, uid, start, days, servings, lang)
+
+
+@router.post("/menu/{day}/meals/{slot}/swap")
+def swap(day: date, slot: str, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session),
+         lang: Lang = LANG):
+    """Đổi một bữa: sinh lại bữa đó, giữ nguyên các bữa khác."""
+    limiter.hit(f"swap:{uid}", *RL.SWAP)  # mỗi lần chạy solver
+    MS.swap(s, uid, day, slot)
+    return _menu_out(s, uid, day, lang)
+
+
+# ---------------- món / nguyên liệu không thích ----------------
+class DislikeIn(BaseModel):
+    kind: Literal["food", "dish", "text"]  # text: thứ chưa có trong catalog (≤ 40 ký tự)
+    code: str = Field(min_length=1, max_length=64)
+
+
+@router.get("/preferences/dislikes")
+def get_dislikes(uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session), lang: Lang = LANG):
+    return PREF.list_dislikes(s, uid, lang)
+
+
+@router.post("/preferences/dislikes", status_code=201)
+def add_dislike(body: DislikeIn, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session),
+                lang: Lang = LANG):
+    pid = PREF.add_dislike(s, uid, body.kind, body.code)
+    return next(x for x in PREF.list_dislikes(s, uid, lang) if x["id"] == pid)
+
+
+@router.delete("/preferences/dislikes/{pref_id}", status_code=204)
+def delete_dislike(pref_id: int, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session)):
+    PREF.delete_dislike(s, uid, pref_id)
+
+
 @router.post("/menu/{day}/meals/{slot}/recipe")
 def recipe(day: date, slot: str, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session),
            lang: Lang = LANG):
@@ -253,7 +381,7 @@ def recipe(day: date, slot: str, uid: uuid.UUID = Depends(current_user), s: Sess
     settings = get_settings()
     r = generate_recipe(get_provider(settings), dish, names, c.profile.allergies, c.profile.diets,
                         low_sodium=Condition.hypertension in c.profile.conditions,
-                        max_retries=settings.llm_max_retries, lang=lang)
+                        max_retries=settings.llm_max_retries, lang=lang, avoid=PREF.text_dislikes(s, uid))
     if r.source == "template" and meal.recipe is not None:
         return {**meal.recipe.content, "source": meal.recipe.source, "kept_previous": True}
     content = r.model_dump(exclude={"source"})
@@ -293,12 +421,14 @@ def del_pantry(item_id: int, uid: uuid.UUID = Depends(current_user), s: Session 
 # ---------------- chatbot ----------------
 class ChatIn(BaseModel):
     message: str
+    # Lựa chọn sau câu hỏi lại (clarify): mention → "food:<mã>" | "dish:<mã>" (mã phải có trong catalog)
+    resolved: dict[str, str] | None = Field(None, max_length=5)
 
 
 @router.post("/chat")
 def chat(body: ChatIn, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session), lang: Lang = LANG):
     limiter.hit(f"chat:{uid}", *RL.CHAT)  # mỗi tin nhắn có thể gọi LLM trả phí
-    return CS.send(s, uid, body.message, lang=lang)
+    return CS.send(s, uid, body.message, lang=lang, resolved=body.resolved)
 
 
 @router.get("/chat/history")
@@ -310,4 +440,4 @@ def chat_history(uid: uuid.UUID = Depends(current_user), s: Session = Depends(ge
 def apply(proposal_id: uuid.UUID, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session),
           lang: Lang = LANG):
     res = CS.apply_proposal(s, uid, proposal_id)
-    return {**res, "menu": _menu_out(s, uid, date.fromisoformat(res["day"]), lang)}
+    return {**res, "menu": _menu_out(s, uid, date.fromisoformat(res["day"]), lang) if res["day"] else None}

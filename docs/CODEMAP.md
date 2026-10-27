@@ -107,7 +107,7 @@ HomNayAnGiButHealthy/
 | `users` (User) | id UUID, email unique, password_hash, created_at | |
 | `refresh_tokens` | user_id, token_hash unique, expires_at, revoked | rotate mỗi lần refresh |
 | `health_profiles` | **user_id PK**, `encrypted_payload` (= `HealthProfileIn` JSON mã hóa), version | bệnh nền/dị ứng/diet nằm TRONG payload |
-| `expert_confirmations` | user_id, condition_code, `encrypted_limits` (= `ExpertLimits`), unique(user, condition) | |
+| `health_limits` | user_id, condition_code (NULL = chung), `encrypted_payload` (= `HealthLimits`), source `manual`/`document`, confirmed_at, unique(user, condition) | thay `expert_confirmations` (migration `d4e5f6a7b8c9`) |
 | `nutrients` | code PK, unit | |
 | `ingredients` | **code PK (str)**, owner_user_id (NULL = global; có = món user nhập từ nhãn), name_vi, name_en, category, tags JSON, aliases JSON, min_g/max_g/step_g, slots (chuỗi con của "BLDS"), gi, gi_verified, source JSON, portion JSON, unverified_nutrients JSON | |
 | `ingredient_nutrients` | (ingredient_code, nutrient_code) PK, amount_per_100g (NULL = chưa xác minh), source_ref | |
@@ -143,13 +143,16 @@ HomNayAnGiButHealthy/
 | DELETE `/me` (204) | — | xóa user + cascade |
 | GET `/profile` | — | `{profile: HealthProfileIn | null}` |
 | PUT `/profile` | `HealthProfileIn` | giống `/needs`; 409 `LOW_ENERGY_ACK_REQUIRED` (kèm `floor_kcal`) / `ED_SUPPORT` |
-| GET `/needs` | — | `{needs: NutritionNeeds, notices: [{code,text}], expert_confirmation_required: [condition]}`; 409 `PROFILE_REQUIRED` |
-| POST `/expert-confirmations` (204) | `{condition, confirmed_consulted_expert, limits: ExpertLimits}` | 422 `CONFIRMATION_REQUIRED`/`NOT_SENSITIVE_CONDITION`/`LIMITS_REQUIRED` |
+| GET `/needs` | — | `{needs: NutritionNeeds, notices: [{code,text}], conditions_without_limits: [condition]}`; 409 `PROFILE_REQUIRED` |
+| GET `/health-limits` | — | `[{id, condition, source, confirmed_at, limits}]` (đã giải mã) |
+| PUT `/health-limits` | `{condition: Condition\|null, limits: HealthLimits, source: manual\|document}` | upsert theo (user, condition); 422 `LIMITS_REQUIRED` |
+| DELETE `/health-limits/{id}` (204) | — | 404 `LIMIT_NOT_FOUND` |
+| POST `/health-limits/extract` (multipart) | `file` (ảnh ≤ 5 MB) **hoặc** `text` (≤ 5000), `consent_ai_processing=true` | bản nháp `{limits, items[quote], rejected, other_instructions, language}`, không lưu; 422 `AI_CONSENT_REQUIRED`/`EXTRACT_INPUT_REQUIRED`/`TEXT_TOO_LONG`/`INVALID_IMAGE`, 413 `FILE_TOO_LARGE`, 503 `EXTRACTION_UNAVAILABLE`, 429 (5/giờ) |
 | GET `/foods` | — | `[Food + {role, excluded_reason}]` (gồm cả món bị loại, có lý do) |
 | GET `/dishes` | — | `[{code, name_vi, main, slots}]` |
 | POST `/foods/custom` (201) | `CustomFoodIn` | `{code, name_vi}`; 422 `ALLERGEN_CONFLICT` |
 | GET `/menu?start=YYYY-MM-DD&days=1..14` | — | `[MenuOut | null]` mỗi ngày |
-| POST `/menu/generate` | `{start, days 1..7}` | `[MenuOut]`; 403 `EXPERT_CONFIRMATION_REQUIRED` |
+| POST `/menu/generate` | `{start, days 1..7}` | `[MenuOut]` (không còn chặn bệnh nền nhạy cảm từ vòng 4) |
 | POST `/menu/{day}/adjust` | `{slot, food_code, delta_g}` | `MenuOut`; lỗi `MENU_NOT_FOUND`, `ITEM_NOT_FOUND`, `ALLERGEN_CONFLICT`, `PANTRY_ITEM`, `DELTA_RANGE`, `ED_SUPPORT` |
 | POST `/menu/{day}/unlock` | `{slot, food_code}` | `MenuOut` |
 | POST `/menu/{day}/meals/{slot}/recipe` | — | `Recipe {steps, seasonings[{name,note}], tip, source}`; nếu LLM lỗi và đã có công thức cũ → công thức cũ + `kept_previous: true` |
@@ -169,7 +172,7 @@ HomNayAnGiButHealthy/
 - Enum: `Sex(male,female)`, `ActivityLevel(sedentary,light,moderate,active,very_active)`, `Goal(lose,maintain,gain_muscle)`, `Condition(diabetes_t1,diabetes_t2,hypertension,kidney,cardio,liver,pregnant,lactating)`, `Allergen(peanut,tree_nut,milk,egg,fish,shellfish,soy,wheat,gluten,sesame)`, `Diet(vegetarian,vegan,halal,gluten_free,no_pork,no_beef)`.
 - Hằng: `SENSITIVE_CONDITIONS = {kidney,cardio,liver,pregnant,lactating}`, `DIABETES = {t1,t2}`.
 - `HealthProfileIn` (extra=forbid): `sex, age(18–100 int), height_cm(120–230, ≤1 thập phân), weight_kg(30–300, ≤1 thập phân), activity_level, goal, conditions[], uses_insulin_or_glucose_meds, allergies[], diets[], custom_target_kcal(800–5000|None), acknowledge_low_energy`. Validator: từ chối bool/NaN/inf, t1+t2 cùng lúc, nam + mang thai; sort+dedupe list.
-- `ExpertLimits`: `energy_kcal_max, protein_g_max, sodium_mg_max, potassium_mg_max, phosphorus_mg_max` (đều optional).
+- `HealthLimits` (alias cũ `ExpertLimits`): `energy_kcal_max, protein_g_max, carb_g_max, fat_g_max, sodium_mg_max, potassium_mg_max, phosphorus_mg_max` (đều optional). `HealthProfileIn.acknowledge_self_managed` bắt buộc khi có bệnh nền nhạy cảm.
 - `Reference{source, applies_to, note}`; `NutrientTarget{code, unit, kind: target|min|max, value, lower, upper, reference, adjusted_for[]}`.
 - `NutritionNeeds{bmr_kcal, activity_factor, tdee_kcal, energy_floor_kcal, meals_per_day, meal_slots[], targets[], warnings[], assumptions[]}` + `.get(code) -> NutrientTarget|None`.
 - `LowEnergyNotAcknowledged(requested, floor)` (exception).
@@ -178,7 +181,7 @@ HomNayAnGiButHealthy/
 
 **`calculator.py`**
 - `mifflin_st_jeor(sex, weight, height, age) -> float` (BMR).
-- `compute_needs(p: HealthProfileIn, expert_limits=None, tolerance=0.05) -> NutritionNeeds`. Thứ tự: BMR × hệ số = TDEE → năng lượng (custom hoặc TDEE×goal, kẹp sàn `max(BMR, sàn giới tính)`; custom dưới sàn không ack ⇒ raise `LowEnergyNotAcknowledged`) → kẹp theo expert limit → đạm (gain: 1.6 g/kg; khác: max(0.8 g/kg, 15% E)) → carb/béo (tiểu đường: carb = max(45% E, 130 g); khác: béo 30%, carb phần còn lại, kẹp AMDR) → chất xơ (min) → vi chất (min, có UL) → natri (max; 1500 nếu tăng huyết áp; expert override) → kali/phốt pho (max nếu expert nhập).
+- `compute_needs(p: HealthProfileIn, limits=None, tolerance=0.05, lang="vi", limit_sources=None) -> NutritionNeeds`. Giới hạn carb/béo của người dùng: dồn phần thiếu trong AMDR, vẫn thiếu ⇒ hạ năng lượng + warning `LIMITS_REDUCE_ENERGY`. Thứ tự: BMR × hệ số = TDEE → năng lượng (custom hoặc TDEE×goal, kẹp sàn `max(BMR, sàn giới tính)`; custom dưới sàn không ack ⇒ raise `LowEnergyNotAcknowledged`) → kẹp theo giới hạn người dùng → đạm (gain: 1.6 g/kg; khác: max(0.8 g/kg, 15% E)) → carb/béo (tiểu đường: carb = max(45% E, 130 g); khác: béo 30%, carb phần còn lại, kẹp AMDR) → chất xơ (min) → vi chất (min, có UL) → natri (max; 1500 nếu tăng huyết áp; giới hạn người dùng ghi đè) → kali/phốt pho (max nếu người dùng nhập).
 - `targets` codes: `energy_kcal, protein_g, carb_g, fat_g` (kind target, có lower/upper ±tol), `fiber_g, iron_mg, zinc_mg, calcium_mg, vitamin_d_ug` (min), `sodium_mg` [+ `potassium_mg`, `phosphorus_mg`] (max).
 - `warnings` có thể: `LOW_ENERGY_ACKNOWLEDGED`, `ENERGY_RAISED_TO_FLOOR`, `CONSULT_DOCTOR_INSULIN`.
 
@@ -246,7 +249,7 @@ HomNayAnGiButHealthy/
 **`recipes.py`**: `RecipeOut{steps[1..8], seasonings[{name, note}] ≤8, tip}`, `Recipe(RecipeOut){source: llm|template}`. `FORBIDDEN_TERMS` (từ khóa cấm theo dị ứng/diet), `NUMERIC_CLAIM` (cấm LLM ghi số gram/kcal). `violations(text, allergies, diets, allowed_phrases) -> list[str]`. `template_recipe(...) -> Recipe` (fallback an toàn). `generate_recipe(provider, dish_name, ingredient_names, allergies, diets, low_sodium, max_retries) -> Recipe`.
 
 ### 2.10 `app/guardrails/` (thuần)
-**`medical.py`**: `DISCLAIMER`, `INSULIN_REMINDER`, `SENSITIVE_MESSAGE`. `pending_expert_confirmations(conditions, confirmed: set) -> list[str]` (bệnh nền nhạy cảm chưa xác nhận ⇒ chặn sinh thực đơn). `menu_notices(conditions, uses_meds) -> list[{code, text}]` (luôn có `DISCLAIMER`; thêm `CONSULT_DOCTOR_INSULIN`, `SODIUM_SEASONING`).
+**`medical.py`**: `sensitive_conditions(conditions)`, `conditions_without_limits(conditions, covered)` (chỉ để hiện notice, **không chặn**). `menu_notices(conditions, uses_meds, lang, no_limits) -> list[{code, text}]` (luôn có `DISCLAIMER`; thêm `CONSULT_DOCTOR_INSULIN`, `SODIUM_SEASONING`, `NO_LIMITS_<BỆNH>`). Chữ hiển thị trong `app/i18n`.
 
 **`eating_disorder.py`**: `SUPPORT_MESSAGE`; `RULES` (kind → (số lần, cửa sổ)): `LOW_TARGET_ATTEMPT` 3/14d, `DECREASE_WHEN_MET` 5/1d, `COMPENSATION` 3/14d, `RESTRICT_INTENT` 2/14d, `DISTRESS` 1/30d. `RESTRICT_PHRASES`, `DISTRESS_PHRASES` (không dấu). `SafetyEventIn{kind, at}`, `EDStatus{flagged, reasons}`. `assess(events, now) -> EDStatus`, `would_flag(events, new_kind, now) -> bool`, `detect_text_signals(text) -> ["DISTRESS"?, "RESTRICT_INTENT"?]`.
 Khi flagged: không cắt giảm thêm (adjust −, low target), không bù cheat day, hiển thị `SUPPORT_MESSAGE` (409 `ED_SUPPORT`).
@@ -255,10 +258,10 @@ Khi flagged: không cắt giảm thêm (adjust −, low target), không bù chea
 **`profile.py`**
 - `load_profile(s, uid) -> HealthProfileIn|None` (giải mã); `require_profile(...)` (409 `PROFILE_REQUIRED`).
 - `record_event(s, uid, kind)` (không commit); `events(s, uid) -> list[SafetyEventIn]` (30 ngày); `ed_status(s, uid) -> EDStatus`.
-- `expert_limits(s, uid) -> (ExpertLimits|None, set[condition])` — nhiều bệnh nền: lấy giới hạn chặt nhất.
+- `merged_limits(s, uid) -> (HealthLimits|None, sources: {field: source}, covered: set[condition|None])` — lấy giới hạn chặt nhất từng chỉ số. `list_limits`, `upsert_limits`, `delete_limit`.
 - `save_profile(s, uid, p) -> NutritionNeeds` (ghi `LOW_TARGET_ATTEMPT`, có thể raise `LOW_ENERGY_ACK_REQUIRED`/`ED_SUPPORT`).
 - `current_needs(s, uid) -> (HealthProfileIn, NutritionNeeds, blocked_conditions[])` — **hàm hay dùng nhất**.
-- `confirm_expert(s, uid, condition, limits)`.
+- `services/limits_extract.py`: `prepare_image` (kiểm tra định dạng thật, xoay EXIF, bỏ metadata, ≤ 2000 px, JPEG), `review` (quy đổi đơn vị, khoảng hợp lệ, trích dẫn phải có trong văn bản), `extract` (LLM vision qua `call_structured(..., image_b64=)`).
 
 **`targets.py`**: `day_energy(needs, delta_kcal) -> float` (không dưới sàn khi giảm); `planner_targets(needs, energy_kcal=None) -> list[PlannerTarget]` (giữ đạm, co giãn carb/béo, chất xơ theo năng lượng).
 
@@ -268,7 +271,7 @@ Khi flagged: không cắt giảm thêm (adjust −, low target), không bù chea
 - `energy_delta(s, uid, day) -> float`, `energy_target(s, uid, needs, day) -> float`, `targets_for(s, uid, needs, day, energy_override=None) -> list[PlannerTarget]`.
 - `get_day(s, uid, day) -> MenuDay|None`; `to_plan(md, catalog, tol, include_inactive=False) -> DayPlan` (tổng tính lại từ nguyên liệu); `save_plan(s, uid, plan, targets) -> MenuDay` (tăng version, giữ bữa inactive, xóa recipe nếu cấu trúc đổi, xóa bữa snack nếu không còn).
 - `mains_by_date(s, uid, center) -> dict[date, set[dish]]`; `locked_items(s, uid, day, md) -> list[LockedItem]` (items locked + pantry của ngày).
-- **`Ctx(s, uid)`**: nạp `profile, needs, blocked, full, catalog, tol`; `ensure_allowed()` (403 nếu blocked); `solve(day, required=None, snacks=None, energy_override=None, keep_structure=False, min_meal_energy=None) -> (DayPlan, targets)` — dựng `PlanRequest` đầy đủ (rotation, recent, locked, structure, low GI cho tiểu đường).
+- **`Ctx(s, uid, lang)`**: nạp `profile, needs, no_limits, full, catalog, tol` (`no_limits` chỉ để hiện notice); `solve(day, required=None, snacks=None, energy_override=None, keep_structure=False, min_meal_energy=None) -> (DayPlan, targets)` — dựng `PlanRequest` đầy đủ (rotation, recent, locked, structure, low GI cho tiểu đường).
 - `generate(s, uid, start, days) -> list[DayPlan]` (tuần tự để ngày sau thấy món ngày trước).
 - `adjust(s, uid, day, slot, food_code, delta_g) -> DayPlan` (khóa item ở gram mới, rebalance giữ cấu trúc; ghi `DECREASE_WHEN_MET`).
 - `unlock(s, uid, day, slot, food_code) -> DayPlan`.
@@ -323,7 +326,7 @@ Khi flagged: không cắt giảm thêm (adjust −, low target), không bù chea
 ## 4. Luồng dữ liệu chính (sequence rút gọn)
 
 **Sinh thực đơn** `POST /menu/generate`
-→ `MS.generate` → `Ctx(s, uid)` (= `P.current_needs` + `catalogs`) → `ensure_allowed` → mỗi ngày `Ctx.solve(day)`: `locked_items` + `mains_by_date` + `targets_for` + `forbidden_mains` → `PlanRequest` → `solve_day` → `DayPlan` → `save_plan` → commit → `_menu_out`.
+→ `MS.generate` → `Ctx(s, uid)` (= `P.current_needs` + `catalogs`) → mỗi ngày `Ctx.solve(day)`: `locked_items` + `mains_by_date` + `targets_for` + `forbidden_mains` → `PlanRequest` → `solve_day` → `DayPlan` → `save_plan` → commit → `_menu_out`.
 
 **Nút +/−** `POST /menu/{day}/adjust`
 → `MS.adjust`: kiểm tra; nếu giảm khi đã đủ ⇒ `DECREASE_WHEN_MET` (có thể 409 ED) → item.locked=True, grams mới → `Ctx.solve(day, keep_structure=True)` (giữ món + tập nguyên liệu) → `save_plan`.
@@ -360,7 +363,6 @@ Khi flagged: không cắt giảm thêm (adjust −, low target), không bù chea
 
 - `docs/ARCHITECTURE.md §8` ghi `seed/ingredients_usda.json` nhưng file thực tế là `seed/ingredients.json`.
 - `ARCHITECTURE.md` mô tả bảng `profile_conditions`, `profile_restrictions`, `meal_dishes` — **không tồn tại** trong code (đã gộp vào payload mã hóa / `meals.dish_code`, xem §10 của tài liệu đó).
-- `POST /menu/{day}/unlock` (`MS.unlock`) không gọi `ensure_allowed()` như `adjust`.
 - `MS.add_pantry` gọi `catalogs()` hai lần (thừa, chỉ ảnh hưởng hiệu năng).
 - `foods_repo._cache` là cache trong process: chạy nhiều worker thì sau khi seed lại cần restart.
 - `chat/parser.py::WANT_WORDS` chứa `"an "` (rất rộng) — hầu hết câu có chữ "ăn" sẽ là `want_food`.

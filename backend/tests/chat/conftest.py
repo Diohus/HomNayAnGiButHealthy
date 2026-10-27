@@ -21,9 +21,10 @@ def make_ctx(catalog):
         n = compute_needs(p)
         cat = catalog.filtered(p.allergies, p.diets)
 
-        def plan_fn(day, required, snacks, e, min_meal):
+        def plan_fn(day, required, snacks, e, min_meal, extra=()):
             return solve_day(PlanRequest(day=day, slots=n.meal_slots, targets=planner_targets(n, e),
-                                         required=required, locked=snacks, min_meal_energy_kcal=min_meal), cat)
+                                         required=required, locked=[*snacks, *extra], min_meal_energy_kcal=min_meal),
+                             cat)
 
         return ChatContext(now=NOW, slots=n.meal_slots, allergies=p.allergies, diets=p.diets, catalog_full=catalog,
                            catalog=cat, energy_target=lambda d: n.get("energy_kcal").value,

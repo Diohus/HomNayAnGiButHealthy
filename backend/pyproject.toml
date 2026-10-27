@@ -16,6 +16,8 @@ dependencies = [
     "argon2-cffi>=23.1",
     "cryptography>=42",
     "httpx>=0.27",
+    "python-multipart>=0.0.9",  # upload ảnh chỉ định của bác sĩ
+    "pillow>=10.3",  # kiểm tra + làm sạch metadata ảnh trước khi gửi LLM
 ]
 
 [project.optional-dependencies]

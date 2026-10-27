@@ -10,13 +10,23 @@
 - **Thực đơn 2 hoặc 3 bữa** theo mức hoạt động. Mỗi nguyên liệu có khối lượng cụ thể. Tổng kcal/đạm/carb/béo nằm trong **±5%** mục tiêu, do bộ giải ILP (PuLP + CBC) tính.
 - **Nút +/−** cho từng nguyên liệu: hệ thống cân bằng lại phần còn lại và giữ nguyên các món đã chọn.
 - **Nguyên liệu có sẵn trong nhà** là ràng buộc cứng; hệ thống tự đề xuất phần còn thiếu.
-- **Chatbot** hiểu các câu như “tôi muốn ăn gà”, “tôi muốn ăn 2 cây kem”:
+- **Chatbot** hiểu các câu như “tôi muốn ăn gà”, “tôi muốn ăn 2 cây kem” — kể cả sai chính tả, không dấu, từ địa phương, tiếng Anh và món ghép (“bún bò huế”: AI ước tính nguyên liệu, gắn nhãn “AI ước tính”), nhờ LLM chọn trong danh sách nguyên liệu/món có sẵn (không bịa mã); chưa chắc thì hỏi lại kèm nút chọn nhanh:
   - Món chính → xây thực đơn xoay quanh món đó (vẫn tuân thủ quy tắc không lặp món quá 3 ngày liên tiếp).
   - Món phụ → thêm vào bữa.
   - Đồ ăn vặt → điều chỉnh cả ngày. Nếu vượt mục tiêu thì đưa ra hai phương án: “ăn ít hơn” hoặc “cheat day” (bù có giới hạn vào các ngày sau).
   - Mọi thay đổi chỉ được áp dụng khi người dùng bấm xác nhận.
+- **Đổi món** cho một bữa (giữ nguyên các bữa khác) và danh sách **Không thích** trong Hồ sơ (hoặc nói với chatbot “tôi không thích cá hồi”); thực đơn hạn chế tối đa các món này. Nói về dị ứng trong chat thì app hướng dẫn cập nhật Hồ sơ, không tự sửa.
+- **Nhật ký “đã ăn”**: tick bữa đã ăn, thêm món ngoài kế hoạch (hoặc nói với chatbot “tôi vừa ăn 1 quả chuối”); vòng tiến độ hiện **đã ăn / mục tiêu** (kế hoạch mờ phía sau); “Cân lại các bữa còn lại” giữ mức tối thiểu mỗi bữa và không cắt giảm khi có tín hiệu rối loạn ăn uống.
+- **Danh sách đi chợ** cho 1–7 ngày × 1–10 người: gộp nguyên liệu, trừ đồ có sẵn, quy về đơn vị mua, đánh dấu đã mua, sao chép/chia sẻ.
+- **Giới hạn sức khỏe của tôi** (Cài đặt): người dùng tự nhập giới hạn bác sĩ đã cho (năng lượng, đạm, carb, chất béo, natri, kali, phốt pho), hoặc **chụp/tải ảnh** hay **dán văn bản** chỉ định để AI trích xuất. AI chỉ trả **bản nháp**, mỗi giá trị kèm trích dẫn nguyên văn; code tự quy đổi đơn vị (mmol → mg, g muối → mg natri) và loại giá trị vô lý; người dùng duyệt/sửa rồi mới lưu.
 - **Cách chế biến** do AI viết (LLM), có kiểm tra dị ứng. Khi AI lỗi hoặc timeout thì dùng công thức mẫu và giữ nguyên công thức cũ.
-- **Guardrail**: disclaimer; chặn sinh thực đơn khi có bệnh thận/tim/gan/mang thai/cho con bú cho đến khi người dùng xác nhận đã hỏi chuyên gia và nhập giới hạn; sàn năng lượng; phát hiện tín hiệu rối loạn ăn uống; dị ứng là ràng buộc cứng; mã hóa dữ liệu sức khỏe; không ghi log dữ liệu sức khỏe; xóa toàn bộ dữ liệu.
+- **Guardrail**: disclaimer; ứng dụng **không có bác sĩ theo dõi** — người có bệnh thận/tim/gan/mang thai/cho con bú xác nhận một lần là tự quản lý chế độ ăn, chưa nhập giới hạn thì dùng mục tiêu chung kèm cảnh báo rõ; sàn năng lượng; phát hiện tín hiệu rối loạn ăn uống; dị ứng là ràng buộc cứng; mã hóa dữ liệu sức khỏe; không ghi log dữ liệu sức khỏe; xóa toàn bộ dữ liệu.
+
+## Quyền riêng tư khi đọc tài liệu bằng AI
+
+- Chỉ gửi khi người dùng **tích đồng ý** (thiếu ⇒ 422). Ảnh/văn bản được gửi tới **nhà cung cấp LLM đã cấu hình** (`LLM_BASE_URL`, mặc định OpenAI) để đọc; chính sách lưu trữ phía nhà cung cấp do hợp đồng/API của họ quyết định.
+- Backend **không lưu** ảnh hay văn bản xuống đĩa/DB và không ghi log nội dung. Ảnh được kiểm tra định dạng thật (JPEG/PNG/WebP, ≤ 5 MB), xoay theo EXIF rồi **xóa toàn bộ metadata** (vị trí GPS, máy chụp…), thu nhỏ ≤ 2000 px trước khi gửi.
+- Chỉ giới hạn mà người dùng bấm “Lưu” mới được lưu (mã hóa như hồ sơ sức khỏe) và bị xóa khi xóa tài khoản. Giới hạn 5 lần đọc/giờ/người.
 
 ## Ngôn ngữ & giao diện
 
@@ -89,7 +99,7 @@ hoặc `pip install truststore` rồi gọi `truststore.inject_into_ssl()` trư�
 ## Test
 
 ```bash
-cd backend && pytest            # 190 test: nutrition, foods, planner, chat, guardrails (mục 3), robustness (mục 4), API
+cd backend && pytest            # 288 test: nutrition, foods, planner, chat, guardrails (mục 3), robustness (mục 4), API
 cd frontend && npm test && npm run typecheck
 ```
 

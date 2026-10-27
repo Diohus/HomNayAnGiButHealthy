@@ -24,6 +24,10 @@ class LLMProvider(Protocol):
 
     def complete_json(self, system: str, user: str, schema: dict, schema_name: str) -> dict: ...
 
+    # Ảnh JPEG base64 (đã bỏ metadata). Provider không hỗ trợ ⇒ LLMError("unsupported").
+    def complete_json_with_image(self, system: str, user: str, image_b64: str, schema: dict,
+                                 schema_name: str) -> dict: ...
+
 
 class OpenAICompatibleProvider:
     name = "openai"
@@ -35,9 +39,18 @@ class OpenAICompatibleProvider:
         self._timeout = s.llm_timeout_s
 
     def complete_json(self, system: str, user: str, schema: dict, schema_name: str) -> dict:
+        return self._complete(system, user, schema, schema_name)
+
+    def complete_json_with_image(self, system: str, user: str, image_b64: str, schema: dict,
+                                 schema_name: str) -> dict:
+        content = [{"type": "text", "text": user},
+                   {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_b64}"}}]
+        return self._complete(system, content, schema, schema_name)
+
+    def _complete(self, system: str, user_content, schema: dict, schema_name: str) -> dict:
         body = {
             "model": self._model,
-            "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
+            "messages": [{"role": "system", "content": system}, {"role": "user", "content": user_content}],
             "response_format": {"type": "json_schema",
                                 "json_schema": {"name": schema_name, "schema": schema, "strict": True}},
         }
@@ -67,13 +80,22 @@ class AnthropicProvider:
         self._model = s.anthropic_model
 
     def complete_json(self, system: str, user: str, schema: dict, schema_name: str) -> dict:
+        return self._complete(system, user, schema)
+
+    def complete_json_with_image(self, system: str, user: str, image_b64: str, schema: dict,
+                                 schema_name: str) -> dict:
+        content = [{"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": image_b64}},
+                   {"type": "text", "text": user}]
+        return self._complete(system, content, schema)
+
+    def _complete(self, system: str, user_content, schema: dict) -> dict:
         a = self._anthropic
         try:
             resp = self._client.beta.messages.create(
                 model=self._model,
                 max_tokens=16000,
                 system=system,
-                messages=[{"role": "user", "content": user}],
+                messages=[{"role": "user", "content": user_content}],
                 output_config={"effort": "low", "format": {"type": "json_schema", "schema": schema}},
                 betas=["server-side-fallback-2026-07-01"],
                 fallbacks="default",

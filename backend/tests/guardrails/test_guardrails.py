@@ -32,44 +32,80 @@ def test_diabetes_menu_controls_carbs(client):
     assert carb["actual"] >= 130 * 0.95  # không quá thấp (nguy cơ hạ đường huyết)
 
 
-def test_sensitive_conditions_block_until_expert_confirms(client):
-    for cond in ("kidney", "cardio", "liver", "pregnant", "lactating"):
-        h = register(client, email=f"{cond}@ex.com", profile={**BASE_PROFILE, "conditions": [cond]})
+SENSITIVE = ("kidney", "cardio", "liver", "pregnant", "lactating")
+
+
+def _self_managed(cond, **kw):
+    return {**BASE_PROFILE, "conditions": [cond], "acknowledge_self_managed": True, **kw}
+
+
+# ---- Vòng 4: tự quản lý thay cho "chuyên gia xác nhận" ----
+def test_sensitive_condition_requires_self_managed_ack(client):
+    h = register(client, profile=False)
+    for cond in SENSITIVE:
+        r = client.put("/api/profile", json={**BASE_PROFILE, "conditions": [cond]}, headers=h)
+        assert r.status_code == 409 and r.json()["code"] == "SELF_MANAGED_ACK_REQUIRED", cond
+        assert r.json()["conditions"] == [cond]
+    r = client.put("/api/profile", json={**BASE_PROFILE, "conditions": ["kidney"]},
+                   headers={**h, "Accept-Language": "en"})
+    assert "kidney disease" in r.json()["message"] and r.json()["params"]["conditions"] == "kidney disease"
+    # bệnh nền không nhạy cảm: không cần xác nhận
+    assert client.put("/api/profile", json={**BASE_PROFILE, "conditions": ["hypertension"]},
+                      headers=h).status_code == 200
+
+
+def test_self_managed_can_generate_menu_and_chat(client):
+    for cond in SENSITIVE:
+        h = register(client, email=f"{cond}@ex.com", profile=_self_managed(cond))
         r = client.post("/api/menu/generate", json={"start": DAY.isoformat()}, headers=h)
-        assert r.status_code == 403 and r.json()["code"] == "EXPERT_CONFIRMATION_REQUIRED"
+        assert r.status_code == 200, (cond, r.text)
+        assert any(n["code"] == f"NO_LIMITS_{cond.upper()}" for n in r.json()[0]["notices"])
         r = client.post("/api/chat", json={"message": "tôi muốn ăn gà"}, headers=h)
-        assert r.json()["kind"] == "refusal" and not r.json()["proposals"]
-        # xác nhận mà không có giới hạn ⇒ từ chối (không tự suy diễn giới hạn)
-        r = client.post("/api/expert-confirmations", json={"condition": cond, "confirmed_consulted_expert": True,
-                                                           "limits": {}}, headers=h)
-        assert r.status_code == 422
+        assert r.json()["kind"] == "proposal" and r.json()["proposals"], cond
 
 
-def test_unlock_blocked_until_expert_confirms(client, auth):
-    """Thực đơn sinh trước khi khai bệnh nền ⇒ unlock (chạy lại solver) cũng phải bị chặn."""
+def test_no_limits_notice_until_limits_entered(client):
+    h = register(client, profile=_self_managed("kidney"))
+    needs = client.get("/api/needs", headers=h).json()
+    assert needs["conditions_without_limits"] == ["kidney"]
+    assert any(n["code"] == "NO_LIMITS_KIDNEY" for n in needs["notices"])
+    # mục tiêu chung như người khỏe: không tự đặt giới hạn y khoa nào
+    plain = register(client, email="plain@ex.com")
+    t = {x["code"]: x["value"] for x in needs["needs"]["targets"]}
+    t0 = {x["code"]: x["value"] for x in client.get("/api/needs", headers=plain).json()["needs"]["targets"]}
+    assert t == t0 and "potassium_mg" not in t
+    r = client.put("/api/health-limits", json={"condition": "kidney", "limits": {"protein_g_max": 50}}, headers=h)
+    assert r.status_code == 200
+    needs = client.get("/api/needs", headers=h).json()
+    assert needs["conditions_without_limits"] == [] and not any(n["code"].startswith("NO_LIMITS")
+                                                                for n in needs["notices"])
+
+
+def test_menu_operations_not_blocked_for_self_managed(client, auth):
+    """Trước vòng 4: unlock/adjust bị 403 khi khai bệnh nền sau khi đã có thực đơn. Giờ chạy bình thường."""
     m = client.post("/api/menu/generate", json={"start": DAY.isoformat()}, headers=auth).json()[0]
     meal = m["plan"]["meals"][0]
     food = meal["items"][0]["food_code"]
-    assert client.put("/api/profile", json={**BASE_PROFILE, "conditions": ["kidney"]}, headers=auth).status_code == 200
-    r = client.post(f"/api/menu/{DAY}/unlock", json={"slot": meal["slot"], "food_code": food}, headers=auth)
-    assert r.status_code == 403 and r.json()["code"] == "EXPERT_CONFIRMATION_REQUIRED"
+    assert client.put("/api/profile", json=_self_managed("kidney"), headers=auth).status_code == 200
     r = client.post(f"/api/menu/{DAY}/adjust", json={"slot": meal["slot"], "food_code": food, "delta_g": 10},
                     headers=auth)
-    assert r.status_code == 403
+    assert r.status_code == 200
+    r = client.post(f"/api/menu/{DAY}/unlock", json={"slot": meal["slot"], "food_code": food}, headers=auth)
+    assert r.status_code == 200
 
 
-def test_expert_limits_applied(client):
-    h = register(client, profile={**BASE_PROFILE, "conditions": ["kidney"]})
-    r = client.post("/api/expert-confirmations", json={"condition": "kidney", "confirmed_consulted_expert": True,
-                                                       "limits": {"protein_g_max": 50, "sodium_mg_max": 1500,
-                                                                  "potassium_mg_max": 2000}}, headers=h)
-    assert r.status_code == 204
+def test_user_limits_applied_with_source(client):
+    h = register(client, profile=_self_managed("kidney"))
+    r = client.put("/api/health-limits", json={"condition": "kidney", "source": "document",
+                                               "limits": {"protein_g_max": 50, "sodium_mg_max": 1500,
+                                                          "potassium_mg_max": 2000}}, headers=h)
+    assert r.status_code == 200 and r.json()["source"] == "document"
     needs = client.get("/api/needs", headers=h).json()
-    assert needs["expert_confirmation_required"] == []
     t = {x["code"]: x for x in needs["needs"]["targets"]}
     assert t["protein_g"]["value"] <= 50 and t["potassium_mg"]["kind"] == "max"
-    m = client.post("/api/menu/generate", json={"start": DAY.isoformat()}, headers=h)
-    assert m.status_code == 200
+    assert t["sodium_mg"]["reference"]["source"] == "Do người dùng cung cấp (trích từ tài liệu)"
+    assert t["sodium_mg"]["adjusted_for"] == ["user_limit"]
+    assert client.post("/api/menu/generate", json={"start": DAY.isoformat()}, headers=h).status_code == 200
 
 
 def test_energy_floor_requires_explicit_ack(client):

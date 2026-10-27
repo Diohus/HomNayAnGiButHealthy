@@ -74,15 +74,22 @@ def _check_decimal(v: float, field: str, max_decimals: int) -> float:
     return v
 
 
-class ExpertLimits(BaseModel):
-    """Giới hạn do chuyên gia y tế cung cấp cho người có bệnh nền nhạy cảm (không do hệ thống tự đặt)."""
+class HealthLimits(BaseModel):
+    """Giới hạn sức khỏe do NGƯỜI DÙNG cung cấp (tự nhập hoặc trích từ tài liệu của bác sĩ).
+    Ứng dụng không tự đặt giới hạn y khoa; khoảng dưới đây chỉ chặn giá trị vô lý/gõ nhầm."""
 
     model_config = ConfigDict(extra="forbid")
     energy_kcal_max: float | None = Field(None, gt=0, le=6000)
     protein_g_max: float | None = Field(None, gt=0, le=400)
+    carb_g_max: float | None = Field(None, ge=20, le=600)
+    fat_g_max: float | None = Field(None, ge=10, le=300)
     sodium_mg_max: float | None = Field(None, gt=0, le=6000)
     potassium_mg_max: float | None = Field(None, gt=0, le=8000)
     phosphorus_mg_max: float | None = Field(None, gt=0, le=4000)
+
+
+ExpertLimits = HealthLimits  # tên cũ (vòng 1–3)
+LIMIT_FIELDS = tuple(HealthLimits.model_fields)
 
 
 class HealthProfileIn(BaseModel):
@@ -100,6 +107,8 @@ class HealthProfileIn(BaseModel):
     diets: list[Diet] = []
     custom_target_kcal: int | None = None
     acknowledge_low_energy: bool = False
+    # Có bệnh nền nhạy cảm ⇒ bắt buộc xác nhận: app không có bác sĩ theo dõi, thực đơn chỉ là gợi ý có sai số
+    acknowledge_self_managed: bool = False
 
     @field_validator("age", mode="before")
     @classmethod

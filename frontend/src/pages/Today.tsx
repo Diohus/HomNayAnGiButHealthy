@@ -2,11 +2,11 @@ import { useState } from "react";
 import { post } from "../api/client";
 import { generateDay, useDishNames, useMenu, useMenuMutation, useNeeds } from "../api/hooks";
 import { DaySummary } from "../components/DaySummary";
+import { IntakePanel } from "../components/IntakePanel";
 import { MealCard } from "../components/MealCard";
 import { Notices } from "../components/Notices";
 import { addDays, isoDay } from "../format";
 import { errorMessage, fmt, useI18n } from "../i18n";
-import { Link } from "react-router-dom";
 
 export function TodayPage() {
   const [day, setDay] = useState(isoDay(new Date()));
@@ -23,13 +23,19 @@ export function TodayPage() {
     post(`/menu/${day}/adjust`, v));
   const unlock = useMenuMutation((v: { slot: string; food_code: string }) => post(`/menu/${day}/unlock`, v));
   const recipe = useMenuMutation((slot: string) => post(`/menu/${day}/meals/${slot}/recipe`));
-  const busy = gen.isPending || adjust.isPending || unlock.isPending || recipe.isPending;
+  const swap = useMenuMutation((slot: string) => post(`/menu/${day}/meals/${slot}/swap`));
+  const eat = useMenuMutation((v: { slot: string; eaten: boolean }) =>
+    post(`/menu/${day}/meals/${v.slot}/eaten`, { eaten: v.eaten }));
+  const rebalance = useMenuMutation(() => post(`/menu/${day}/rebalance`));
+  const busy = gen.isPending || adjust.isPending || unlock.isPending || recipe.isPending || swap.isPending
+    || eat.isPending || rebalance.isPending;
+  // USED_DISLIKED:<code>: a disliked dish/ingredient was used because nothing else fit
+  const disliked = new Set((md?.plan.warnings ?? []).filter((w) => w.startsWith("USED_DISLIKED:")).map((w) => w.slice(14)));
+  const over = (md?.plan.warnings ?? []).find((w) => w.startsWith("OVER_TARGET:"));
   const run = <V,>(m: { mutate: (v: V, o: { onError: (e: unknown) => void; onSuccess: () => void }) => void }, v: V) => {
     setErr(null);
     m.mutate(v, { onError, onSuccess: () => setErr(null) });
   };
-
-  const blocked = needs.data?.expert_confirmation_required ?? [];
 
   return (
     <main>
@@ -39,11 +45,6 @@ export function TodayPage() {
         <button className="secondary" onClick={() => setDay(addDays(day, 1))} aria-label={t.today.nextDay}>›</button>
       </div>
       <Notices notices={md?.notices ?? needs.data?.notices ?? []} />
-      {blocked.length > 0 && (
-        <p className="notice notice-warn">
-          {t.today.expertRequired} <Link to="/settings">{t.today.expertLink}</Link>
-        </p>
-      )}
       {err && <p className="error">{err}</p>}
       {md?.energy_adjustment_kcal ? (
         <p className="notice">
@@ -53,18 +54,25 @@ export function TodayPage() {
       {!md && !menu.isLoading && (
         <div className="card center">
           <p>{t.today.empty}</p>
-          <button disabled={busy || blocked.length > 0} onClick={() => run(gen, undefined)}>{t.today.generate}</button>
+          <button disabled={busy} onClick={() => run(gen, undefined)}>{t.today.generate}</button>
         </div>
       )}
       {md && (
         <>
-          <DaySummary plan={md.plan} />
+          {over && <p className="notice notice-warn">{fmt(t.intake.over, { kcal: over.slice(12) })}</p>}
+          <DaySummary plan={md.plan} eatenKcal={md.intake.totals.energy_kcal ?? 0} />
           {md.plan.meals.map((m) => (
             <MealCard key={m.slot} meal={m} dishName={dishName(m.dish_code)} recipe={md.recipes[m.slot]} busy={busy}
                       onAdjust={(food, delta) => run(adjust, { slot: m.slot, food_code: food, delta_g: delta })}
                       onUnlock={(food) => run(unlock, { slot: m.slot, food_code: food })}
-                      onRecipe={() => run(recipe, m.slot)} />
+                      onRecipe={() => run(recipe, m.slot)} onSwap={() => run(swap, m.slot)}
+                      eaten={md.eaten_slots.includes(m.slot)}
+                      onEaten={(v) => run(eat, { slot: m.slot, eaten: v })}
+                      usedDisliked={(!!m.dish_code && disliked.has(m.dish_code))
+                        || m.items.some((i) => disliked.has(i.food_code))} />
           ))}
+          <IntakePanel md={md} day={day} busy={busy} onChanged={() => menu.refetch()}
+                       onRebalance={() => run(rebalance, undefined)} />
           <button className="secondary" disabled={busy} onClick={() => run(gen, undefined)}>{t.today.regenerate}</button>
         </>
       )}

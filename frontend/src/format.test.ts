@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, fmtGrams, fmtKcal, fmtPct, fmtSig } from "./format";
+import { addDays, fmtGrams, fmtKcal, fmtPct, fmtSig, foldText } from "./format";
 
 describe("hiển thị không có độ chính xác giả", () => {
   it("kcal làm tròn 10", () => {
@@ -14,4 +14,11 @@ describe("hiển thị không có độ chính xác giả", () => {
   });
   it("phần trăm số nguyên", () => expect(fmtPct(-0.0123)).toBe("-1%"));
   it("cộng ngày", () => expect(addDays("2026-10-31", 1)).toBe("2026-11-01"));
+});
+
+describe("tìm kiếm không dấu", () => {
+  it("bỏ dấu tiếng Việt và đ", () => {
+    expect(foldText("Cá Hồi")).toBe("ca hoi");
+    expect(foldText("Đậu hũ")).toBe("dau hu");
+  });
 });

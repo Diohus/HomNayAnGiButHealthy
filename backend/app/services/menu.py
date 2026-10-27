@@ -26,6 +26,7 @@ from app.planner import (
     solve_day,
 )
 from app.planner.solver import finalize, totals_of
+from app.services import preferences as PREF
 from app.services import profile as P
 from app.services.targets import day_energy, planner_targets
 
@@ -140,38 +141,47 @@ class Ctx:
 
     def __init__(self, s: Session, user_id: uuid.UUID, lang: Lang = "vi"):
         self.s, self.user_id, self.lang = s, user_id, lang
-        self.profile, self.needs, self.blocked = P.current_needs(s, user_id, lang)
+        # no_limits: bệnh nền nhạy cảm chưa có giới hạn ⇒ chỉ hiện notice, KHÔNG chặn (vòng 4: tự quản lý)
+        self.profile, self.needs, self.no_limits = P.current_needs(s, user_id, lang)
         self.full, self.catalog = catalogs(s, user_id, self.profile)
         self.tol = get_settings().planner_tolerance
+        self.disliked_foods, self.disliked_dishes = PREF.dislikes(s, user_id)
 
-    def ensure_allowed(self):
-        if self.blocked:
-            raise AppError(403, "EXPERT_CONFIRMATION_REQUIRED", conditions=self.blocked)
-
-    def solve(self, day: date, required: list[Requirement] | None = None, snacks: list[LockedItem] | None = None,
-              energy_override: float | None = None, keep_structure: bool = False,
-              min_meal_energy: float | None = None) -> tuple[DayPlan, list]:
-        md = get_day(self.s, self.user_id, day)
-        locked = locked_items(self.s, self.user_id, day, md)
-        if snacks is not None:  # thay danh sách đồ ăn vặt
-            locked = [x for x in locked if x.slot != "snack"] + snacks
-        mains = mains_by_date(self.s, self.user_id, day)
-        targets = targets_for(self.s, self.user_id, self.needs, day, energy_override)
+    def _recent(self, day: date, mains: dict[date, set[str]]) -> dict[str, int]:
         recent: dict[str, int] = {}
         for d in range(1, 4):
             for dish in mains.get(day - timedelta(days=d), set()):
                 recent[dish] = recent.get(dish, 0) + 1
+        return recent
+
+    def request(self, day: date, targets, locked: list[LockedItem], forbidden: set[str], **kw) -> PlanRequest:
+        return PlanRequest(
+            day=day, slots=self.needs.meal_slots, targets=targets, tolerance=self.tol, forbidden_dishes=forbidden,
+            locked=locked, prefer_low_gi=bool(set(self.profile.conditions) & DIABETES),
+            disliked_foods=self.disliked_foods, disliked_dishes=self.disliked_dishes, **kw)
+
+    def solve(self, day: date, required: list[Requirement] | None = None, snacks: list[LockedItem] | None = None,
+              energy_override: float | None = None, keep_structure: bool = False,
+              min_meal_energy: float | None = None, extra_locked: list[LockedItem] = ()) -> tuple[DayPlan, list]:
+        """`extra_locked`: thành phần món ghép AI ước tính (origin="ai_estimate") từ chatbot."""
+        md = get_day(self.s, self.user_id, day)
+        locked = locked_items(self.s, self.user_id, day, md)
+        if snacks is not None:  # thay danh sách đồ ăn vặt
+            locked = [x for x in locked if x.slot != "snack"] + snacks
+        if extra_locked:  # món ghép thay chỗ nguyên liệu khóa cũ ở cùng bữa
+            slots = {x.slot for x in extra_locked}
+            locked = [x for x in locked if x.slot not in slots or x.origin == "pantry"] + list(extra_locked)
+        mains = mains_by_date(self.s, self.user_id, day)
+        targets = targets_for(self.s, self.user_id, self.needs, day, energy_override)
+        recent = self._recent(day, mains)
         structure = None
         if keep_structure and md is not None:
             structure = {m.slot: MealStructure(dish_code=m.dish_code,
                                                food_codes=[i.ingredient_code for i in m.items if not i.locked])
                          for m in md.meals if m.active and m.slot != "snack"}
-        req = PlanRequest(
-            day=day, slots=self.needs.meal_slots, targets=targets, tolerance=self.tol,
-            forbidden_dishes=forbidden_mains(day, mains, self.catalog.dishes),
-            recent_dishes=recent, locked=locked, structure=structure, required=required or [],
-            prefer_low_gi=bool(set(self.profile.conditions) & DIABETES), min_meal_energy_kcal=min_meal_energy,
-        )
+        req = self.request(day, targets, locked, forbidden_mains(day, mains, self.catalog.dishes),
+                           recent_dishes=recent, structure=structure, required=required or [],
+                           min_meal_energy_kcal=min_meal_energy)
         return solve_day(req, self.catalog), targets
 
 
@@ -179,7 +189,6 @@ def generate(s: Session, user_id: uuid.UUID, start: date, days: int) -> list[Day
     if not 1 <= days <= 7:
         raise AppError(422, "DAYS_RANGE", key="error.DAYS_RANGE.generate")
     c = Ctx(s, user_id)
-    c.ensure_allowed()
     out = []
     for i in range(days):  # tuần tự: ngày sau thấy món chính của ngày trước (ràng buộc lặp món)
         plan, targets = c.solve(start + timedelta(days=i))
@@ -189,10 +198,53 @@ def generate(s: Session, user_id: uuid.UUID, start: date, days: int) -> list[Day
     return out
 
 
+def swap(s: Session, user_id: uuid.UUID, day: date, slot: str) -> DayPlan:
+    """Đổi MỘT bữa: sinh lại bữa đó, các bữa khác giữ nguyên (khóa đúng slot), pantry/đồ ăn vặt giữ nguyên.
+    Cấm món chính hiện tại, món của các bữa khác trong ngày, món không thích; giữ ràng buộc lặp món."""
+    c = Ctx(s, user_id)
+    md = get_day(s, user_id, day)
+    if md is None:
+        raise AppError(404, "MENU_NOT_FOUND")
+    row = next((m for m in md.meals if m.slot == slot and m.active and slot != "snack"), None)
+    if row is None:
+        raise AppError(404, "MEAL_NOT_FOUND")
+    current = to_plan(md, c.catalog, c.tol)
+    target = next(m for m in current.meals if m.slot == slot)
+    others = [m for m in current.meals if m.slot not in (slot, "snack")]
+    snack = [m for m in current.meals if m.slot == "snack"]
+    # bữa giữ nguyên: mọi item (kể cả phần có sẵn) khóa cứng ở đúng slot; origin "frozen" để solver không phân bổ
+    # lại phần có sẵn. Kết quả các bữa này lấy lại từ DB (giữ nguyên cờ locked/origin gốc).
+    locked = [LockedItem(food_code=i.food_code, grams=i.grams, slot=m.slot, origin="frozen")
+              for m in others for i in m.items]
+    locked += [LockedItem(food_code=i.food_code, grams=i.grams, slot="snack", origin="snack")
+               for m in snack for i in m.items]
+    # phần nguyên liệu có sẵn đang nằm ở bữa này được phân bổ lại trong bữa mới
+    locked += [LockedItem(food_code=i.food_code, grams=i.grams, slot=None, origin="pantry")
+               for i in target.items if i.origin == "pantry"]
+    mains = mains_by_date(s, user_id, day)
+    forbidden = (forbidden_mains(day, mains, c.catalog.dishes) | c.disliked_dishes
+                 | {m.dish_code for m in others if m.dish_code} | ({row.dish_code} if row.dish_code else set()))
+    if not any(d.allowed_in(slot) and d.code not in forbidden for d in c.catalog.dishes.values()):
+        raise AppError(409, "NO_ALTERNATIVE")
+    targets = targets_for(s, user_id, c.needs, day)
+    req = c.request(day, targets, locked, forbidden, recent_dishes=c._recent(day, mains),
+                    frozen_slots={m.slot for m in others})
+    plan = solve_day(req, c.catalog)
+    new = next((m for m in plan.meals if m.slot == slot), None)
+    if new is None or not new.dish_code or new.dish_code == row.dish_code:
+        raise AppError(409, "NO_ALTERNATIVE")
+    order = {m.slot: i for i, m in enumerate(current.meals)}
+    meals = sorted([*others, new, *snack], key=lambda m: order.get(m.slot, 99))
+    final = finalize(PlanRequest(day=day, slots=c.needs.meal_slots, targets=targets, tolerance=c.tol), c.catalog,
+                     meals, plan.conflicts, plan.warnings)
+    save_plan(s, user_id, final, targets)  # bữa đổi ⇒ xóa công thức cũ; bữa khác không đổi ⇒ giữ công thức
+    s.commit()
+    return final
+
+
 def adjust(s: Session, user_id: uuid.UUID, day: date, slot: str, food_code: str, delta_g: float) -> DayPlan:
     """Nút +/-: cố định nguyên liệu tại khối lượng mới, cân bằng lại phần còn lại (giữ cấu trúc bữa)."""
     c = Ctx(s, user_id)
-    c.ensure_allowed()
     md = get_day(s, user_id, day)
     if md is None:
         raise AppError(404, "MENU_NOT_FOUND")
@@ -233,7 +285,6 @@ def adjust(s: Session, user_id: uuid.UUID, day: date, slot: str, food_code: str,
 
 def unlock(s: Session, user_id: uuid.UUID, day: date, slot: str, food_code: str) -> DayPlan:
     c = Ctx(s, user_id)
-    c.ensure_allowed()  # unlock chạy lại solver ⇒ cùng guardrail với generate/adjust
     md = get_day(s, user_id, day)
     meal = next((m for m in md.meals if m.slot == slot), None) if md else None
     item = next((i for i in meal.items if i.ingredient_code == food_code), None) if meal else None
@@ -278,7 +329,6 @@ def add_pantry(s: Session, user_id: uuid.UUID, day: date, food_code: str, grams:
 def apply_plan(s: Session, user_id: uuid.UUID, plan: DayPlan) -> M.MenuDay:
     """Lưu một DayPlan đã được người dùng xác nhận (từ chatbot). Kiểm tra lại dị ứng + lặp món."""
     c = Ctx(s, user_id)
-    c.ensure_allowed()
     for m in plan.meals:
         for it in m.items:
             if it.food_code not in c.catalog.foods:

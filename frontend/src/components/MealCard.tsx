@@ -12,16 +12,22 @@ interface Props {
   onAdjust?: (food: string, delta: number) => void;
   onUnlock?: (food: string) => void;
   onRecipe?: () => void;
+  onSwap?: () => void;
+  eaten?: boolean;
+  onEaten?: (eaten: boolean) => void;
+  usedDisliked?: boolean;
 }
 
-export function MealCard({ meal, dishName, recipe, busy, onAdjust, onUnlock, onRecipe }: Props) {
+export function MealCard({ meal, dishName, recipe, busy, onAdjust, onUnlock, onRecipe, onSwap, eaten, onEaten,
+                          usedDisliked }: Props) {
   const [open, setOpen] = useState(meal.slot !== "snack");
   const name = useFoodNames();
   const { t } = useI18n();
   const tag = (origin: string) =>
-    origin === "pantry" ? t.today.tags.pantry : origin === "snack" ? t.today.tags.snack : t.today.tags.adjusted;
+    origin === "pantry" ? t.today.tags.pantry : origin === "snack" ? t.today.tags.snack
+      : origin === "ai_estimate" ? t.today.tags.aiEstimate : t.today.tags.adjusted;
   return (
-    <section className="card meal">
+    <section className={`card meal${eaten ? " eaten" : ""}`}>
       <button className="meal-head" onClick={() => setOpen(!open)} aria-expanded={open}>
         <div>
           <h3>{t.slots[meal.slot] ?? meal.slot}</h3>
@@ -29,6 +35,13 @@ export function MealCard({ meal, dishName, recipe, busy, onAdjust, onUnlock, onR
         </div>
         <span className="kcal">{fmtKcal(meal.totals.energy_kcal ?? 0)} kcal</span>
       </button>
+      {onEaten && (
+        <label className="check small">
+          <input type="checkbox" checked={!!eaten} disabled={busy} onChange={(e) => onEaten(e.target.checked)} />
+          {t.today.eaten}
+        </label>
+      )}
+      {usedDisliked && <p className="notice notice-warn small">{t.today.usedDisliked}</p>}
       {open && (
         <>
           <ul className="items">
@@ -59,6 +72,10 @@ export function MealCard({ meal, dishName, recipe, busy, onAdjust, onUnlock, onR
           </p>
           {onRecipe && meal.slot !== "snack" && (
             <button className="secondary" disabled={busy} onClick={onRecipe}>{t.today.recipe}</button>
+          )}
+          {onSwap && meal.slot !== "snack" && (
+            <button className="secondary" disabled={busy} onClick={onSwap}
+                    aria-label={`${t.today.swap} — ${t.slots[meal.slot] ?? meal.slot}`}>{t.today.swap}</button>
           )}
           {recipe && (
             <div className="recipe">

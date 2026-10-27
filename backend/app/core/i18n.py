@@ -50,9 +50,11 @@ class Msg:
 
 
 def resolve(v, lang: Lang):
-    """Tham số có thể là Msg, hoặc dict {"vi": ..., "en": ...} (tên nguyên liệu/món)."""
+    """Tham số có thể là Msg, dict {"vi": ..., "en": ...} (tên nguyên liệu/món), hoặc list (nối bằng ", ")."""
     if isinstance(v, Msg):
         return v.render(lang)
+    if isinstance(v, list):
+        return ", ".join(str(resolve(x, lang)) for x in v)
     if isinstance(v, dict) and set(v) <= set(LANGS) and v:
         return v.get(lang) or v.get("vi")
     return v

@@ -7,7 +7,6 @@ EN: dict[str, str] = {
     "error.ALLERGEN_CONFLICT.custom": "This product conflicts with the {reason} you declared.",
     "error.ALLERGEN_CONFLICT.proposal": "This suggestion contains an ingredient that no longer fits your profile.",
     "error.BAD_CREDENTIALS": "Incorrect email or password.",
-    "error.CONFIRMATION_REQUIRED": "You need to confirm that you have consulted a healthcare professional.",
     "error.DAYS_RANGE.view": "You can view 1–14 days at a time.",
     "error.DAYS_RANGE.generate": "You can create 1–7 days at a time.",
     "error.DELTA_RANGE": "Each adjustment must be between 1 and 500 g.",
@@ -17,8 +16,6 @@ EN: dict[str, str] = {
         "mental health professional. The app will pause suggestions that reduce your energy intake."
     ),
     "error.EMAIL_EXISTS": "This email is already registered.",
-    "error.EXPERT_CONFIRMATION_REQUIRED":
-        "Please confirm you have consulted a professional and enter safe limits before creating a menu.",
     "error.FOOD_NOT_FOUND": "This ingredient is not in the database.",
     "error.GRAMS_RANGE": "Amount must be between 1 and 3000 g.",
     "error.HTTP": "Invalid request.",
@@ -26,7 +23,7 @@ EN: dict[str, str] = {
     "error.INVALID_REFRESH": "Your session has expired.",
     "error.INVALID_TOKEN": "Your session is invalid or has expired.",
     "error.ITEM_NOT_FOUND": "Ingredient not found in this meal.",
-    "error.LIMITS_REQUIRED": "Enter at least one limit provided by your professional (e.g. sodium, protein, potassium).",
+    "error.LIMITS_REQUIRED": "Enter at least one limit (e.g. sodium, protein, potassium).",
     "error.LOW_ENERGY_ACK_REQUIRED": (
         "A target of {requested_kcal} kcal is below the safe minimum of ~{floor_kcal} kcal/day. "
         "Please confirm explicitly if you still want to continue (consulting a professional is recommended)."
@@ -34,7 +31,6 @@ EN: dict[str, str] = {
     "error.MEAL_NOT_FOUND": "Meal not found.",
     "error.MENU_NOT_FOUND": "No menu for this day yet.",
     "error.MESSAGE_LENGTH": "Messages must be 1–1000 characters.",
-    "error.NOT_SENSITIVE_CONDITION": "This condition does not require professional confirmation.",
     "error.PANTRY_ITEM": "Pantry items are edited in the “Pantry” list.",
     "error.PROFILE_REQUIRED": "Please fill in your health profile first.",
     "error.PROPOSAL_APPLIED": "This suggestion has already been applied.",
@@ -45,6 +41,86 @@ EN: dict[str, str] = {
     "error.STALE_PROPOSAL": "Your menu changed after this suggestion was made. Please ask the chatbot again.",
     "error.UNAUTHENTICATED": "Please log in.",
     "error.VALIDATION_ERROR": "Invalid data.",
+    # ---------- Round 6: intake log, shopping list, text dislikes ----------
+    "error.SERVINGS_RANGE": "Number of people must be between 1 and 10.",
+    "error.SLOT_INVALID": "Invalid meal.",
+    "error.INTAKE_NOT_FOUND": "This log entry was not found.",
+    "error.NOTHING_TO_REBALANCE": "All of today's meals are marked as eaten; there is nothing left to rebalance.",
+    "chat.dislike_text_label": "I'll avoid {food} in cooking instructions",
+    "chat.log_confirm": "Log to today's {slot}: {items}?",
+    "chat.log_label": "Log to today's diary",
+    "chat.rebalance_label": "Rebalance the remaining meals",
+    "chat.ai_estimate_short": "AI estimate",
+    "shop.category.protein": "Meat, fish, eggs, beans",
+    "shop.category.carb": "Starches",
+    "shop.category.vegetable": "Vegetables",
+    "shop.category.dairy": "Dairy",
+    "shop.category.fruit": "Fruit",
+    "shop.category.nut": "Nuts",
+    "shop.category.fat": "Cooking oil",
+    "shop.category.snack": "Snacks",
+    # ---------- Round 5: LLM food understanding, meal swap, dislikes ----------
+    "error.NO_ALTERNATIVE": "No other suitable dish for this meal (excluding the current dish, disliked dishes and dishes repeated over 3 days).",
+    "error.PREFERENCE_NOT_FOUND": "This item is not in your dislike list.",
+    "chat.clarify": "I'm not sure which food you mean. Please pick one:",
+    "chat.refusal_component": "I can't suggest {food} because it contains {component}, which conflicts with the {reason} you declared.",
+    "chat.ai_estimate_note": (
+        "Ingredient amounts for {dishes} are AI estimates (high uncertainty); nutrition is still calculated from the "
+        "database. You can adjust them with +/- after applying."
+    ),
+    "chat.allergy_redirect": (
+        "Allergies are important health information, so I don't change your profile from chat. Please update "
+        "Allergies in your Profile; menus will then fully exclude that food."
+    ),
+    "chat.dislike_confirm": "Want me to avoid these in your menus? Tap Apply to add them to your dislike list.",
+    "chat.dislike_label": "Add “{food}” to my dislike list",
+    "chat.dislike_unknown": (
+        "I don't have “{names}” in the ingredient data yet, so I can't exclude it from menus. You can leave it out "
+        "when cooking, or add dislikes in your Profile."
+    ),
+    "chat.dislike_none": "I couldn't tell which food you don't like. You can add dislikes in your Profile.",
+    # ---------- Round 4: self-managed + user-provided limits ----------
+    "error.SELF_MANAGED_ACK_REQUIRED": (
+        "You selected a condition that needs special care ({conditions}). No doctor monitors this app; menus are "
+        "only suggestions and may be inaccurate. If your doctor gave you limits (protein, sodium, potassium…), "
+        "enter them in Settings. Please confirm you manage your own diet to continue."
+    ),
+    "error.LIMIT_NOT_FOUND": "Limit not found.",
+    "error.AI_CONSENT_REQUIRED": "You need to agree to send the image/text to the AI provider to read the document.",
+    "error.EXTRACT_INPUT_REQUIRED": "Send exactly one image or one piece of text.",
+    "error.TEXT_TOO_LONG": "Text can be at most {max} characters.",
+    "error.FILE_TOO_LARGE": "Images can be at most {max_mb} MB.",
+    "error.INVALID_IMAGE": "This file is not a valid image (JPEG, PNG or WebP only).",
+    "error.EXTRACTION_UNAVAILABLE": "The AI can't read documents right now. You can still enter limits by hand.",
+    "notice.NO_LIMITS_KIDNEY": (
+        "You have kidney disease but haven't entered your own limits (protein, sodium, potassium, phosphorus). "
+        "Menus use general targets and may not suit you. If your doctor gave you instructions, enter them in "
+        "Settings → Health limits."
+    ),
+    "notice.NO_LIMITS_CARDIO": (
+        "You have cardiovascular disease but haven't entered your own limits (sodium, fat). Menus use general "
+        "targets and may not suit you. If your doctor gave you instructions, enter them in Settings → Health limits."
+    ),
+    "notice.NO_LIMITS_LIVER": (
+        "You have liver disease but haven't entered your own limits (protein, sodium, energy). Menus use general "
+        "targets and may not suit you. If your doctor gave you instructions, enter them in Settings → Health limits."
+    ),
+    "notice.NO_LIMITS_PREGNANT": (
+        "You're pregnant but haven't entered your own limits. Energy and micronutrient needs change by trimester; "
+        "menus use general targets and may not suit you. If your doctor gave you instructions, enter them in "
+        "Settings → Health limits."
+    ),
+    "notice.NO_LIMITS_LACTATING": (
+        "You're breastfeeding but haven't entered your own limits. Energy and micronutrient needs are higher than "
+        "usual; menus use general targets and may not suit you. If your doctor gave you instructions, enter them in "
+        "Settings → Health limits."
+    ),
+    "ref.user_limit.manual": "Provided by the user (entered by hand)",
+    "ref.user_limit.document": "Provided by the user (extracted from a document)",
+    "extract.reject.out_of_range": "Value is outside a plausible range and may have been misread.",
+    "extract.reject.unit_mismatch": "The unit doesn't match this limit.",
+    "extract.reject.quote_not_found": "The quote wasn't found in the original text.",
+    "extract.reject.empty_quote": "No verbatim quote from the document.",
 
     # ---------- Exclusion reasons ----------
     "reason.allergy": "{name} allergy",
@@ -158,7 +234,6 @@ EN: dict[str, str] = {
     "ref.applies.female": "female, {age} years",
     "ref.applies.adults": "adults",
     "ref.applies.athletes": "people who exercise",
-    "ref.expert_limit": "Limit provided by the user's healthcare professional",
     "ref.activity_source": "Common PAL factors (McArdle, Katch & Katch, Exercise Physiology) — assumption",
     "ref.energy_floor_source":
         "NHLBI Obesity Education Initiative 1998 (assumed 1200 women / 1500 men, needs verification)",
@@ -195,10 +270,6 @@ EN: dict[str, str] = {
         "or “it's my cheat day, I'm having pizza”. I'll adjust your menu accordingly."
     ),
     "chat.refusal": "I can't suggest {food} because it conflicts with the {reason} you declared.",
-    "chat.blocked": (
-        "You have a health condition that needs professional confirmation before the app can suggest menus "
-        "({conditions}). Please complete the confirmation step in Settings."
-    ),
     "chat.slot_not_in_plan": "{slot} isn't part of your plan (based on your activity level), so I used the closest meal.",
     "chat.day.today": "today",
     "chat.day.tomorrow": "tomorrow",

@@ -30,6 +30,7 @@ CATEGORY_ORDER = ["protein", "carb", "vegetable", "dairy", "fruit", "nut", "fat"
 UNKNOWN_GI = 70.0  # giả định bảo thủ cho tinh bột chưa có GI
 DAILY_MAX_FACTOR = 1.5  # tổng 1 nguyên liệu tự do trong ngày ≤ 1.5 × max_g một bữa
 MICROS = ("calcium_mg", "iron_mg", "zinc_mg", "vitamin_d_ug")
+DISLIKE_PENALTY = 30.0  # phạt mềm cho món/nguyên liệu không thích (< 50 của "bữa thiếu món chính")
 MAIN_MIN_SHARE = 0.4  # nguyên liệu chính của món ≥ 40% khẩu phần tối đa (giả định, tránh "món gà" chỉ 50 g)
 POOL = {"dish": 6, "carb": 4, "vegetable": 6, "fruit": 3, "dairy": 3, "nut": 2, "fat": 2}
 
@@ -79,6 +80,8 @@ def solve_day(req: PlanRequest, catalog: FoodCatalog) -> DayPlan:
             fixed[(li.food_code, li.slot)] += li.grams
             fixed_origin[(li.food_code, li.slot)] = li.origin
 
+    frozen = set(req.frozen_slots) | {s for (_, s), o in fixed_origin.items() if o == "ai_estimate"}
+
     def locked_amount(nutrient: str) -> float:
         return (sum(catalog.food(f).nutrient(nutrient, gr) for (f, _), gr in fixed.items())
                 + sum(catalog.food(f).nutrient(nutrient, gr) for f, gr in pantry.items())
@@ -119,7 +122,12 @@ def solve_day(req: PlanRequest, catalog: FoodCatalog) -> DayPlan:
     # và đa dạng giữa các ngày. Nguyên liệu khóa/có sẵn/bắt buộc và món dùng chúng luôn được giữ.
     keep_codes = set(pantry) | {c for c, _ in fixed} | req_food_codes
 
+    def disliked_dish(d) -> bool:
+        return d.code in req.disliked_dishes or bool(set(d.main) & req.disliked_foods)
+
     def dish_candidates(slot: str):
+        if slot in frozen:
+            return []
         if req.structure is not None:
             st = req.structure.get(slot)
             if st and st.dish_code and st.dish_code in catalog.dishes and st.dish_code not in req.forbidden_dishes:
@@ -128,10 +136,13 @@ def solve_day(req: PlanRequest, catalog: FoodCatalog) -> DayPlan:
         cands = [d for d in catalog.dishes.values() if d.allowed_in(slot) and d.code not in req.forbidden_dishes]
         must = [d for d in cands if d.code in req_dish_codes or set(d.main) & keep_codes]
         rest = sorted((d for d in cands if d not in must), key=lambda d: (
-            _jitter(req.day, f"{slot}:{d.code}", 1.0) + 0.5 * req.recent_dishes.get(d.code, 0), d.code))
+            disliked_dish(d), _jitter(req.day, f"{slot}:{d.code}", 1.0) + 0.5 * req.recent_dishes.get(d.code, 0),
+            d.code))
         return must + rest[:max(0, POOL["dish"] - len(must))]
 
     def free_foods(slot: str, dishes) -> list[Food]:
+        if slot in frozen:
+            return []
         if req.structure is not None:
             st = req.structure.get(slot)
             codes = set(st.food_codes) if st else set()
@@ -144,7 +155,7 @@ def solve_day(req: PlanRequest, catalog: FoodCatalog) -> DayPlan:
                 continue
             items = [f for f in allowed if f.category == cat]
             keep = [f for f in items if f.code in mains or f.code in keep_codes]
-            other = sorted((f for f in items if f not in keep), key=lambda f: (_jitter(
+            other = sorted((f for f in items if f not in keep), key=lambda f: (f.code in req.disliked_foods, _jitter(
                 req.day, f"{slot}:{f.code}", 1.0) + ((f.gi or UNKNOWN_GI) / 100
                                                      if req.prefer_low_gi and cat == "carb" else 0.0), f.code))
             out += keep + other[:max(0, k - len(keep))]
@@ -165,7 +176,9 @@ def solve_day(req: PlanRequest, catalog: FoodCatalog) -> DayPlan:
             y[(d.code, m)] = pulp.LpVariable(f"y_{d.code}_{m}", cat="Binary")
         for code in pantry:
             f = catalog.food(code)
-            if f.allowed_in(m) or not any(f.allowed_in(s) for s in slots):
+            if m in frozen:
+                continue
+            if f.allowed_in(m) or not any(f.allowed_in(s) for s in slots if s not in frozen):
                 p[(code, m)] = pulp.LpVariable(f"p_{code}_{m}", 0)
     for code, grams in pantry.items():
         prob += pulp.lpSum(p[(code, m)] for m in slots if (code, m) in p) == grams
@@ -188,6 +201,8 @@ def solve_day(req: PlanRequest, catalog: FoodCatalog) -> DayPlan:
 
     # ---------- Cấu trúc bữa ----------
     for m in slots:
+        if m in frozen:
+            continue
         ys = [v for (d, s), v in y.items() if s == m]
         prob += pulp.lpSum(ys) <= 1
         if req.structure is None or (req.structure.get(m) and req.structure[m].dish_code):
@@ -200,7 +215,8 @@ def solve_day(req: PlanRequest, catalog: FoodCatalog) -> DayPlan:
             for main in catalog.dishes[dcode].main:
                 mf = catalog.food(main)
                 prob += present(main, m) >= max(mf.min_g, MAIN_MIN_SHARE * mf.max_g) * yv
-            obj.append((0.5 * req.recent_dishes.get(dcode, 0) + _jitter(req.day, dcode)) * yv)
+            obj.append((0.5 * req.recent_dishes.get(dcode, 0) + _jitter(req.day, dcode)
+                        + (DISLIKE_PENALTY if disliked_dish(catalog.dishes[dcode]) else 0.0)) * yv)
         if req.structure is not None:
             continue
         by_cat = defaultdict(list)
@@ -294,6 +310,12 @@ def solve_day(req: PlanRequest, catalog: FoodCatalog) -> DayPlan:
             prob += dev >= (share - 0.08) * meal_energy - mt
             obj.append(5 * dev / e_t.value)
 
+    for m, floor in req.min_slot_energy_kcal.items():
+        if m in slots and m not in frozen:
+            short = pulp.LpVariable(f"slot_floor_{m}", 0)
+            prob += short >= floor - meal_total("energy_kcal", m)
+            obj.append(200 * short / (e_t.value if e_t else 2000.0))
+
     # Tiểu đường: ưu tiên GI thấp (phạt tải đường huyết xấp xỉ)
     c_t = targets.get("carb_g")
     if req.prefer_low_gi and c_t:
@@ -314,6 +336,8 @@ def solve_day(req: PlanRequest, catalog: FoodCatalog) -> DayPlan:
         if req.structure is None:
             prob += pulp.lpSum(e for (c, _), e in g.items() if c == code) <= DAILY_MAX_FACTOR * f.max_g
         obj.append((0.3 + _jitter(req.day, code, 0.4)) * v)
+        if code in req.disliked_foods:
+            obj.append(DISLIKE_PENALTY * v)
 
     prob += pulp.lpSum(obj)
     status = prob.solve(pulp.PULP_CBC_CMD(msg=False, timeLimit=req.time_limit_s, gapRel=0.01, gapAbs=3.0))
@@ -353,6 +377,14 @@ def solve_day(req: PlanRequest, catalog: FoodCatalog) -> DayPlan:
             PlanItem(food_code=c, grams=gr, locked=True, origin="snack") for c, gr in sorted(snacks.items())]))
     for ml in meals:
         ml.totals = totals_of(ml.items, catalog)
+    # Không còn lựa chọn khác ⇒ vẫn dùng món/nguyên liệu không thích nhưng báo rõ
+    for ml in meals:
+        if ml.dish_code and ml.dish_code in req.disliked_dishes:
+            warnings.append(f"USED_DISLIKED:{ml.dish_code}")
+        for it in ml.items:
+            if it.food_code in req.disliked_foods and not it.locked:
+                warnings.append(f"USED_DISLIKED:{it.food_code}")
+    warnings = list(dict.fromkeys(warnings))
 
     return finalize(req, catalog, meals, conflicts, warnings)
 

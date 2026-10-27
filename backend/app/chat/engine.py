@@ -4,11 +4,13 @@ Mọi câu trả lời lấy từ catalog i18n theo `ctx.lang` (app/i18n)."""
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
+from itertools import pairwise
 
 from app.chat.schemas import ChatReply, DetectedFood, ParsedIntent, Proposal
 from app.core.i18n import Lang, Msg, name_of, tr
 from app.foods.catalog import FoodCatalog
-from app.foods.matching import find_foods, find_unknown_compounds
+from app.foods.matching import CONTAINER_WORDS, FoodMatch, find_foods, find_unknown_compounds, has_diacritics, normalize
+from app.foods.resolve import Resolution
 from app.foods.restrictions import exclusion_reason, reason_msg
 from app.guardrails.eating_disorder import SUPPORT_KEY, SafetyEventIn, detect_text_signals, would_flag
 from app.nutrition.compensation import (
@@ -22,9 +24,14 @@ from app.planner.rotation import forbidden_mains
 from app.planner.schemas import DayPlan, LockedItem, Requirement
 
 MAX_SNACK_PORTIONS = 10
+TEXT_DISLIKE_MAX = 40  # "không thích" dạng chữ (ngoài catalog), vd "hành", "ngò"
 
-# plan_fn(day, required, snack_items, energy_override_kcal, min_meal_energy_kcal) -> DayPlan
-PlanFn = Callable[[date, list[Requirement], list[LockedItem], float | None, float | None], DayPlan]
+# plan_fn(day, required, snack_items, energy_override_kcal, min_meal_energy_kcal, extra_locked) -> DayPlan
+# extra_locked: thành phần món ghép do AI ước tính (origin="ai_estimate"), cố định ở bữa của nó
+PlanFn = Callable[[date, list[Requirement], list[LockedItem], float | None, float | None, list[LockedItem]],
+                  DayPlan]
+# resolve_fn(mentions) -> {mention: Resolution} (K1, LLM). None/thiếu mention ⇒ giữ hành vi cũ (need_label)
+ResolveFn = Callable[[list[str]], dict[str, Resolution]]
 
 
 @dataclass
@@ -40,10 +47,11 @@ class ChatContext:
     plan_fn: PlanFn
     mains_by_date: dict[date, set[str]] = field(default_factory=dict)
     snacks_by_date: dict[date, list[LockedItem]] = field(default_factory=dict)
-    blocked_conditions: list[str] = field(default_factory=list)
     safety_events: list[SafetyEventIn] = field(default_factory=list)
     ed_flagged: bool = False
     lang: Lang = "vi"  # ngôn ngữ câu trả lời (Accept-Language); tin đã lưu giữ nguyên ngôn ngữ lúc gửi
+    resolve_fn: ResolveFn | None = None
+    resolved: dict[str, str] = field(default_factory=dict)  # lựa chọn của người dùng sau "clarify": mention → mã
 
     def t(self, key: str, **params) -> str:
         return tr(key, self.lang, **params)
@@ -112,6 +120,10 @@ def _handle(text: str, parsed: ParsedIntent, ctx: ChatContext) -> ChatReply:
         msg = ctx.t(SUPPORT_KEY) if flagged else ctx.t("chat.restrict", floor=kcal(ctx.energy_floor))
         return ChatReply(kind="support", text=msg, safety_events=["RESTRICT_INTENT"])
 
+    # Câu nói về DỊ ỨNG: không tự sửa hồ sơ (dữ liệu sức khỏe, ràng buộc cứng) ⇒ hướng dẫn cập nhật trong Hồ sơ
+    if parsed.intent == "allergy":
+        return ChatReply(kind="allergy_redirect", text=ctx.t("chat.allergy_redirect"))
+
     # ---------- 2. Nhận diện món ----------
     matches = find_foods(text, ctx.catalog_full)
     for mention in parsed.mentions:  # LLM có thể tách tên món; vẫn phải khớp catalog bằng quy tắc
@@ -126,7 +138,52 @@ def _handle(text: str, parsed: ParsedIntent, ctx: ChatContext) -> ChatReply:
         if m.food_code not in ctx.catalog_full.foods and all(m.food_code != x.food_code for x in matches):
             matches.append(m)
 
-    if not matches or (unknown and not [m for m in matches if m.food_code]):
+    # 2b. K1: mention chưa khớp chính xác ⇒ LLM chọn trong ứng viên; lựa chọn của người dùng (clarify) thắng
+    dish_hint: dict[str, str] = {}
+    composites: list[Resolution] = []
+    clarify: list[Resolution] = []
+    res: dict[str, Resolution] = {}
+    picked = {m: r for m, code in ctx.resolved.items() if (r := _picked(m, code, ctx)) is not None}
+    # mention chỉ khớp MỘT PHẦN alias ("bún bò huế" ⇒ "bún" + "bò") cũng nhờ LLM hiểu cả cụm
+    partial = [m for m in parsed.mentions if m not in unknown and _partial(m, ctx)] if ctx.resolve_fn else []
+    todo = [m for m in unknown + partial if m not in picked]  # lựa chọn không hợp lệ ⇒ hỏi LLM như bình thường
+    if ctx.resolve_fn and todo:
+        res.update(ctx.resolve_fn(todo))
+    res.update(picked)
+    for m in partial:  # LLM hiểu thành món/món ghép/nguyên liệu khác ⇒ bỏ các khớp lẻ bên trong cụm
+        r = res.get(m)
+        inner = {x.food_code for x in find_foods(m, ctx.catalog_full)}
+        if r is None or r.kind in ("not_food", "unknown") or (r.kind == "ingredient" and r.food_code in inner):
+            res.pop(m, None)  # giữ khớp alias cũ (kể cả số lượng "2 cây kem")
+            continue
+        matches = [x for x in matches if x.food_code not in inner]
+    for mention, r in res.items():
+        code = r.food_code or (ctx.catalog_full.dishes[r.dish_code].main[0] if r.dish_code else None)
+        if r.kind in ("ingredient", "dish") and code:
+            if r.dish_code:
+                dish_hint[code] = r.dish_code
+            if all(code != x.food_code for x in matches):
+                matches.append(FoodMatch(food_code=code, alias=mention, start=0, end=0))
+        elif r.kind == "composite":
+            composites.append(r)
+        elif r.kind == "clarify":
+            clarify.append(r)
+    unknown = [m for m in unknown if m not in res or res[m].kind in ("not_food", "unknown")]
+    if clarify:
+        return ChatReply(kind="clarify", text=ctx.t("chat.clarify"), clarify=[
+            {"mention": r.mention, "options": [{"code": o, "name": _option_name(o, ctx)} for o in r.options]}
+            for r in clarify])
+
+    if parsed.intent == "log_food":
+        return _log(matches, composites, unknown, parsed, ctx)
+
+    if parsed.intent == "dislike":
+        objs = unknown + [r.mention for r in composites]
+        if not matches and not objs and parsed.dislike_object:  # parser quy tắc không tách được mention
+            objs = [parsed.dislike_object]
+        return _dislike(matches, ctx, objs)
+
+    if not matches and not composites:
         if parsed.intent == "want_food" or unknown:
             what = ctx.t("chat.unknown_named", names=", ".join(unknown)) if unknown else ctx.t("chat.unknown_any")
             return ChatReply(kind="need_label", unknown_mentions=unknown, text=ctx.t("chat.need_label", what=what))
@@ -139,7 +196,7 @@ def _handle(text: str, parsed: ParsedIntent, ctx: ChatContext) -> ChatReply:
         reason = None if m.food_code in ctx.catalog.foods else exclusion_reason(f, ctx.allergies, ctx.diets)
         role = cat.role(m.food_code)
         detected.append(DetectedFood(food_code=f.code, name=name_of(f, ctx.lang), role=role, allowed=reason is None,
-                                     reason=reason))
+                                     reason=reason, dish_code=dish_hint.get(f.code)))
 
     refused = [d for d in detected if not d.allowed]
     ok = [d for d in detected if d.allowed]
@@ -148,26 +205,45 @@ def _handle(text: str, parsed: ParsedIntent, ctx: ChatContext) -> ChatReply:
         # Lý do luôn là tên đã dịch ("dị ứng cá" / "fish allergy"), không bao giờ là mã thô
         refusal_text = " ".join(ctx.t("chat.refusal", food=ctx.inline(d.name), reason=reason_msg(d.reason))
                                 for d in refused)
-        if not ok:
-            return ChatReply(kind="refusal", text=refusal_text, detected=detected, unknown_mentions=unknown)
-
-    # ---------- 3. Bệnh nền nhạy cảm: chưa được sinh thực đơn ----------
-    if ctx.blocked_conditions:
-        conds = ", ".join(ctx.t(f"condition.{c}") for c in ctx.blocked_conditions)
-        return ChatReply(kind="refusal", detected=detected, text=ctx.t("chat.blocked", conditions=conds))
+    # Món ghép: dị ứng vẫn là ràng buộc CỨNG — thành phần nào bị loại thì từ chối cả món và nêu thành phần đó
+    ok_composites: list[Resolution] = []
+    for r in composites:
+        bad = [c for c, _ in r.components if c not in ctx.catalog.foods]
+        if bad:
+            f = ctx.catalog_full.food(bad[0])
+            refusal_text = " ".join(x for x in [refusal_text, ctx.t(
+                "chat.refusal_component", food=r.mention, component=ctx.inline(name_of(f, ctx.lang)),
+                reason=reason_msg(exclusion_reason(f, ctx.allergies, ctx.diets)))] if x)
+        else:
+            ok_composites.append(r)
+    if (refused or len(ok_composites) < len(composites)) and not ok and not ok_composites:
+        return ChatReply(kind="refusal", text=refusal_text, detected=detected, unknown_mentions=unknown)
 
     day = _target_day(parsed, ctx.now)
     mains = [d for d in ok if d.role == "main"]
     sides = [d for d in ok if d.role == "side"]
     snacks = [d for d in ok if d.role == "snack"]
 
-    # ---------- 4. Món chính / phụ → xây thực đơn xoay quanh ----------
+    # ---------- 3. Món chính / phụ → xây thực đơn xoay quanh ----------
     required: list[Requirement] = []
     notes: list[str] = []
     slot = parsed.slot if parsed.slot in ctx.slots else None
     if parsed.slot and parsed.slot not in ("snack", None) and parsed.slot not in ctx.slots:
         notes.append(ctx.t("chat.slot_not_in_plan", slot=ctx.slot_name(parsed.slot)))
     used_slots: set[str] = set()
+    extra: list[LockedItem] = []
+    for r in ok_composites[:2]:  # món ghép chiếm trọn một bữa, khối lượng do AI ước tính (sai số cao)
+        cslot = next((s for s in [slot or _default_slot(ctx, day), *ctx.slots] if s not in used_slots), None)
+        if cslot is None:
+            continue
+        used_slots.add(cslot)
+        extra += [LockedItem(food_code=c, grams=g, slot=cslot, origin="ai_estimate") for c, g in r.components]
+    if ok_composites:
+        notes.append(ctx.t("chat.ai_estimate_note", dishes=", ".join(r.mention for r in ok_composites)))
+
+    def plan_fn(d, req, sn, e, mm):
+        return ctx.plan_fn(d, req, sn, e, mm, extra)
+
     for d in mains[:2]:
         want_slot = slot or _default_slot(ctx, day)
         cands = [x for x in ctx.catalog.dishes.values() if d.food_code in x.main]
@@ -179,7 +255,7 @@ def _handle(text: str, parsed: ParsedIntent, ctx: ChatContext) -> ChatReply:
                 continue
             ok_dishes = sorted(c.code for c in cands if c.allowed_in(s) and c.code not in forbidden)
             if ok_dishes:
-                chosen = (ok_dishes[0], s)
+                chosen = (d.dish_code if d.dish_code in ok_dishes else ok_dishes[0], s)
                 break
         if chosen is None:
             if cands and all(c.code in forbidden for c in cands):
@@ -202,12 +278,13 @@ def _handle(text: str, parsed: ParsedIntent, ctx: ChatContext) -> ChatReply:
     existing_snacks = list(ctx.snacks_by_date.get(day, []))
 
     if not snacks:
-        if not required:
+        if not required and not extra:
             return ChatReply(kind="info", detected=detected, unknown_mentions=unknown,
                              text=" ".join([refusal_text, *notes]).strip() or ctx.t("chat.no_change"))
-        plan = ctx.plan_fn(day, required, existing_snacks, None, None)
-        text_lines = [ctx.t("chat.propose_around", day=_day_name(day, ctx),
-                            foods=", ".join(ctx.inline(d.name) for d in mains + sides)), *_plan_lines(plan, ctx)]
+        plan = plan_fn(day, required, existing_snacks, None, None)
+        around = [ctx.inline(d.name) for d in mains + sides] + [r.mention for r in ok_composites]
+        text_lines = [ctx.t("chat.propose_around", day=_day_name(day, ctx), foods=", ".join(around)),
+                      *_plan_lines(plan, ctx)]
         text_lines.append(_totals_line(plan, ctx.energy_target(day), ctx))
         text_lines += _shortfall_lines(plan, ctx)
         text_lines += notes
@@ -217,7 +294,7 @@ def _handle(text: str, parsed: ParsedIntent, ctx: ChatContext) -> ChatReply:
                          proposals=[Proposal(key="plan_update", label=ctx.t("chat.label.apply_plan"), day=day,
                                              plan=plan)])
 
-    # ---------- 5. Đồ ăn vặt → điều chỉnh cả ngày / cheat day ----------
+    # ---------- 4. Đồ ăn vặt → điều chỉnh cả ngày / cheat day ----------
     qty = {m.food_code: (m.qty_value, m.qty_unit) for m in matches}
     new_items: list[LockedItem] = []
     for sn in snacks:
@@ -254,7 +331,7 @@ def _handle(text: str, parsed: ParsedIntent, ctx: ChatContext) -> ChatReply:
         for i in new_items) + ". "
     all_snacks = [*existing_snacks, *new_items]
 
-    absorb = ctx.plan_fn(day, required, all_snacks, None, None)
+    absorb = plan_fn(day, required, all_snacks, None, None)
     if fits(absorb):
         cheat_note = [ctx.t("chat.no_cheat_needed")] if parsed.cheat_day else []
         lines = [head + ctx.t("chat.absorbed", day=_day_name(day, ctx), kcal=kcal(target)),
@@ -278,7 +355,7 @@ def _handle(text: str, parsed: ParsedIntent, ctx: ChatContext) -> ChatReply:
                 smaller.append(i.model_copy(update={"grams": g}))
         if not smaller:
             break
-        alt = ctx.plan_fn(day, required, [*existing_snacks, *smaller], None, None)
+        alt = plan_fn(day, required, [*existing_snacks, *smaller], None, None)
         if fits(alt):
             desc = ", ".join(f"{int(i.grams)} g {ctx.inline(ctx.food_name(i.food_code))}" for i in smaller)
             proposals.append(Proposal(key="smaller_portion", day=day, plan=alt, snacks=snack_dicts(smaller),
@@ -287,7 +364,7 @@ def _handle(text: str, parsed: ParsedIntent, ctx: ChatContext) -> ChatReply:
 
     # Phương án 2: cheat day — bữa chính vẫn đủ, phần vượt bù có giới hạn vào các ngày sau
     e_cheat = cheat_day_energy(target, snack_kcal(all_snacks))
-    cheat_plan = ctx.plan_fn(day, required, all_snacks, e_cheat, MEAL_FLOOR_SHARE * target)
+    cheat_plan = plan_fn(day, required, all_snacks, e_cheat, MEAL_FLOOR_SHARE * target)
     overflow = max(cheat_plan.totals.get("energy_kcal", 0.0) - target, 0.0)
     no_comp = ctx.ed_flagged or would_flag(ctx.safety_events, "COMPENSATION", ctx.now)
     if no_comp:
@@ -310,6 +387,135 @@ def _handle(text: str, parsed: ParsedIntent, ctx: ChatContext) -> ChatReply:
     if refusal_text:
         lines.append(refusal_text)
     return ChatReply(kind="warning", detected=detected, text="\n".join(x for x in lines if x), proposals=proposals)
+
+
+# Từ chỉ số lượng/đơn vị/động từ không làm một mention thành "khớp một phần" (tránh gọi LLM thừa: "2 cây kem")
+_FILLER = {"cay", "phan", "mon", "chiec", "qua", "trai", "mot", "hai", "ba", "it", "nhieu", "them", "an", "uong",
+           "g", "gr", "gram", "kg", "ml", "l", "a", "some", "the", "of", "piece", "pieces", "cup", "glass",
+           "bowl", "plate", "serving", *CONTAINER_WORDS}
+
+
+def _partial(mention: str, ctx: ChatContext) -> bool:
+    """Có khớp alias nhưng còn từ có nghĩa chưa được phủ (vd "bún bò huế": "huế" chưa khớp)."""
+    keep = has_diacritics(mention)
+    norm = normalize(mention, keep)
+    ms = find_foods(mention, ctx.catalog_full)
+    if not ms:
+        return False
+    # ≥ 2 alias liền kề, không có từ khác chen giữa ("phở bò", "bánh mì trứng") ⇒ có thể là món ghép
+    spans = sorted((x.start, x.end) for x in ms)
+    if any(not norm[a[1]:b[0]].strip() for a, b in pairwise(spans)):
+        return True
+    covered = [False] * len(norm)
+    for x in ms:
+        covered[x.start:x.end] = [True] * (x.end - x.start)
+    i = 0
+    for tok in norm.split(" "):
+        start = norm.find(tok, i) if tok else i
+        i = start + len(tok)
+        if not tok or all(covered[start:i]):
+            continue
+        plain = normalize(tok).strip()
+        if plain in _FILLER or plain.replace(".", "").replace(",", "").isdigit():
+            continue
+        return True
+    return False
+
+
+def _past_slot(ctx: ChatContext) -> str:
+    """Bữa vừa ăn theo giờ hiện tại (câu thì quá khứ)."""
+    h = ctx.now.hour
+    if h < 11 and "breakfast" in ctx.slots:
+        return "breakfast"
+    if h < 16 and "lunch" in ctx.slots:
+        return "lunch"
+    return "dinner" if "dinner" in ctx.slots else ctx.slots[-1]
+
+
+def _log_grams(m: FoodMatch, f, parsed: ParsedIntent, single: bool) -> float:
+    qv, qu = m.qty_value, m.qty_unit
+    if qv is None and single:
+        qv, qu = parsed.quantity_value, parsed.quantity_unit
+    unit = f.portion.grams if f.portion else round((f.min_g + f.max_g) / 2 / f.step_g) * f.step_g
+    if qv and qu in ("g", "ml"):
+        return float(qv)
+    return float(round((qv if qv and qu == "portion" else 1) * unit))
+
+
+def _log(matches: list[FoodMatch], composites: list[Resolution], unknown: list[str], parsed: ParsedIntent,
+         ctx: ChatContext) -> ChatReply:
+    """Đã ăn (thì quá khứ) ⇒ đề xuất ghi nhật ký hôm nay + đề xuất cân lại các bữa còn lại. Dị ứng vẫn là ràng
+    buộc cứng (không ghi món bị loại). Người dùng bấm Áp dụng mới lưu."""
+    day = ctx.now.date()
+    slot = parsed.slot or _past_slot(ctx)
+    items: list[dict] = []
+    shown: list[str] = []
+    refused: list[str] = []
+    for m in matches[:6]:
+        full = ctx.catalog_full.food(m.food_code) if m.food_code in ctx.catalog_full.foods else None
+        f = ctx.catalog.foods.get(m.food_code)
+        if f is None:
+            if full is not None:
+                refused.append(ctx.t("chat.refusal", food=ctx.inline(name_of(full, ctx.lang)),
+                                     reason=reason_msg(exclusion_reason(full, ctx.allergies, ctx.diets))))
+            continue
+        g = min(_log_grams(m, f, parsed, len(matches) == 1), 3000.0)
+        s = "snack" if f.category == "snack" else slot
+        items.append({"slot": s, "food_code": f.code, "grams": g, "source": "chat"})
+        shown.append(f"{int(g)} g {ctx.inline(name_of(f, ctx.lang))}")
+    for r in composites[:2]:
+        bad = [c for c, _ in r.components if c not in ctx.catalog.foods]
+        if bad:
+            f = ctx.catalog_full.food(bad[0])
+            refused.append(ctx.t("chat.refusal_component", food=r.mention, component=ctx.inline(name_of(f, ctx.lang)),
+                                 reason=reason_msg(exclusion_reason(f, ctx.allergies, ctx.diets))))
+            continue
+        items += [{"slot": slot, "food_code": c, "grams": float(g), "source": "ai_estimate"} for c, g in r.components]
+        shown.append(f"{r.mention} ({ctx.t('chat.ai_estimate_short')})")
+    if not items:
+        if refused:
+            return ChatReply(kind="refusal", text=" ".join(refused))
+        what = ctx.t("chat.unknown_named", names=", ".join(unknown)) if unknown else ctx.t("chat.unknown_any")
+        return ChatReply(kind="need_label", unknown_mentions=unknown, text=ctx.t("chat.need_label", what=what))
+    text = " ".join([ctx.t("chat.log_confirm", slot=ctx.slot_name(slot).lower(), items=", ".join(shown)), *refused])
+    return ChatReply(kind="proposal", text=text, proposals=[
+        Proposal(key="log", day=day, label=ctx.t("chat.log_label"), intake=items),
+        Proposal(key="rebalance", day=day, label=ctx.t("chat.rebalance_label")),
+    ])
+
+
+def _picked(mention: str, code: str, ctx: ChatContext) -> Resolution | None:
+    """Lựa chọn của người dùng sau "clarify" ("food:x" | "dish:y"); mã phải có trong catalog."""
+    kind, _, c = code.partition(":")
+    if kind == "food" and c in ctx.catalog_full.foods:
+        return Resolution(mention=mention, kind="ingredient", food_code=c)
+    if kind == "dish" and c in ctx.catalog_full.dishes:
+        return Resolution(mention=mention, kind="dish", dish_code=c)
+    return None
+
+
+def _option_name(code: str, ctx: ChatContext) -> str:
+    kind, _, c = code.partition(":")
+    obj = ctx.catalog_full.dishes[c] if kind == "dish" else ctx.catalog_full.food(c)
+    return name_of(obj, ctx.lang)
+
+
+def _dislike(matches: list[FoodMatch], ctx: ChatContext, unknown: list[str]) -> ChatReply:
+    """Không thích (ràng buộc mềm): đề xuất thêm vào danh sách, người dùng bấm Áp dụng mới lưu."""
+    proposals = []
+    for m in matches[:5]:
+        f = (ctx.catalog if m.food_code in ctx.catalog.foods else ctx.catalog_full).food(m.food_code)
+        name = name_of(f, ctx.lang)
+        proposals.append(Proposal(key="preference", day=ctx.now.date(), label=ctx.t("chat.dislike_label", food=name),
+                                  preference={"kind": "food", "code": f.code}))
+    # chưa có trong dữ liệu (vd "hành" chỉ là gia vị): không bịa mã ⇒ lưu dạng chữ, công thức sẽ tránh từ này
+    for label in [u.strip()[:TEXT_DISLIKE_MAX] for u in unknown if u.strip()][:3]:
+        proposals.append(Proposal(key="preference", day=ctx.now.date(),
+                                  label=ctx.t("chat.dislike_text_label", food=label),
+                                  preference={"kind": "text", "code": label}))
+    if not proposals:
+        return ChatReply(kind="info", text=ctx.t("chat.dislike_none"))
+    return ChatReply(kind="proposal", text=ctx.t("chat.dislike_confirm"), proposals=proposals)
 
 
 def _day_name(day: date, ctx: ChatContext) -> str:

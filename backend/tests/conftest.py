@@ -34,7 +34,12 @@ def catalog():
 
 @pytest.fixture(autouse=True)
 def _reset_rate_limits():
+    from app.chat import parser
+    from app.foods import resolve
+
     limiter.reset()
+    parser._cache.clear()  # cache LLM in-memory không được rò giữa các test
+    resolve.cache.clear()
     yield
     limiter.reset()
 

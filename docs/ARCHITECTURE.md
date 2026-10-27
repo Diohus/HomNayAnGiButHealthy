@@ -41,7 +41,7 @@
 users ─1:1─ health_profiles ─1:n─ profile_conditions
   │                       └─1:n─ profile_restrictions (allergy / diet: vegetarian, halal, gluten_free...)
   ├─1:n─ refresh_tokens
-  ├─1:n─ expert_confirmations       (xác nhận đã tham khảo chuyên gia + giới hạn chuyên gia cung cấp)
+  ├─1:n─ health_limits              (giới hạn sức khỏe do người dùng cung cấp — nhập tay/trích từ tài liệu; vòng 4)
   ├─1:n─ pantry_items ──n:1─ ingredients
   ├─1:n─ safety_events              (tín hiệu rối loạn ăn uống: chỉ loại sự kiện + thời điểm)
   └─1:n─ menu_days ─1:n─ meals ─1:n─ meal_dishes ─1:n─ meal_items ──n:1─ ingredients
@@ -70,7 +70,7 @@ ingredients ─1:n─ ingredient_tags (allergen: peanut, shellfish, gluten...; d
 | `meals` | menu_day_id, slot (`breakfast`/`lunch`/`dinner`), active (bool — **giữ dữ liệu khi đổi 2↔3 bữa**) |
 | `meal_items` | meal_dish_id, ingredient_id, grams, locked (bool), origin (`optimizer`/`user_adjust`/`pantry`) |
 | `pantry_items` | user_id, ingredient_id, grams_available |
-| `expert_confirmations` | user_id, condition_code, confirmed_at, limits (JSON, do người dùng nhập từ chuyên gia) |
+| `health_limits` | user_id, condition_code (NULL = chung), encrypted_payload (`HealthLimits`), source (manual/document), confirmed_at — thay `expert_confirmations` từ vòng 4 |
 
 Dữ liệu sức khỏe (cân nặng, bệnh nền, dị ứng) chỉ nằm trong `health_profiles.encrypted_payload` + bảng điều kiện; `DELETE /me` xóa cascade toàn bộ.
 
@@ -104,7 +104,7 @@ Dữ liệu sức khỏe (cân nặng, bệnh nền, dị ứng) chỉ nằm tro
 | Guardrail | Nơi kiểm tra |
 |---|---|
 | Disclaimer onboarding + màn thực đơn | Frontend + API trả cờ `disclaimer_required` |
-| Bệnh nền nhạy cảm | `guardrails.can_generate()` → 403 `EXPERT_CONFIRMATION_REQUIRED` |
+| Bệnh nền nhạy cảm | Vòng 4: không chặn. `PUT /profile` cần `acknowledge_self_managed` (409 `SELF_MANAGED_ACK_REQUIRED`); chưa có giới hạn ⇒ mục tiêu chung + notice `NO_LIMITS_*` |
 | Insulin/thuốc hạ đường | Cảnh báo cố định trên màn thực đơn |
 | Sàn năng lượng | `nutrition` kẹp target; mục tiêu thấp hơn → cần `acknowledge_low_energy=true` |
 | Rối loạn ăn uống | `safety_events`: ≥3 lần đặt mục tiêu dưới sàn trong 14 ngày **hoặc** ≥5 lần giảm khi đã đạt ≥100% kcal trong 1 ngày → dừng tối ưu cắt giảm, hiển thị thông điệp hỗ trợ. **Ngưỡng là giả định** |

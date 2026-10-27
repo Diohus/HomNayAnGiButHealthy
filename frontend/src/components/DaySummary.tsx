@@ -4,7 +4,7 @@ import { fmt, useI18n } from "../i18n";
 import type { DayPlan } from "../types";
 import { CalorieRing, MacroBar } from "./Progress";
 
-export function DaySummary({ plan }: { plan: DayPlan }) {
+export function DaySummary({ plan, eatenKcal }: { plan: DayPlan; eatenKcal?: number }) {
   const name = useFoodNames();
   const { t } = useI18n();
   const dev = Object.fromEntries(plan.deviations.map((d) => [d.code, d]));
@@ -12,7 +12,9 @@ export function DaySummary({ plan }: { plan: DayPlan }) {
   const misses = plan.deviations.filter((d) => !d.within);
   return (
     <section className="card summary">
-      {e && <CalorieRing actual={e.actual} target={e.target} />}
+      {e && (eatenKcal !== undefined
+        ? <CalorieRing actual={eatenKcal} target={e.target} planned={e.actual} />
+        : <CalorieRing actual={e.actual} target={e.target} />)}
       <div className="macros">
         {["protein_g", "carb_g", "fat_g"].map((c) => dev[c] && (
           <MacroBar key={c} code={c} actual={dev[c].actual} target={dev[c].target} />

@@ -1,17 +1,18 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ApiError, put } from "../api/client";
 import { useNeeds, useProfile } from "../api/hooks";
+import { DislikesSection } from "../components/Dislikes";
 import { Notices } from "../components/Notices";
 import { fmtKcal, fmtSig } from "../format";
 import { errorMessage, fmt, useI18n } from "../i18n";
-import type { Profile } from "../types";
+import { SENSITIVE_CONDITIONS, type Profile } from "../types";
 
 const EMPTY: Profile = {
   sex: "female", age: 30, height_cm: 160, weight_kg: 55, activity_level: "moderate", goal: "maintain",
   conditions: [], uses_insulin_or_glucose_meds: false, allergies: [], diets: [], custom_target_kcal: null,
-  acknowledge_low_energy: false,
+  acknowledge_low_energy: false, acknowledge_self_managed: false,
 };
 
 function toggle(list: string[], v: string) {
@@ -111,6 +112,17 @@ export function ProfilePage({ onboarding = false }: { onboarding?: boolean }) {
             {t.profile.meds}
           </label>
         )}
+        {p.conditions.some((c) => SENSITIVE_CONDITIONS.includes(c)) && (
+          <div className="notice notice-warn">
+            <p className="small">{t.profile.selfManagedHelp}</p>
+            <label className="check">
+              <input type="checkbox" checked={p.acknowledge_self_managed}
+                     onChange={(e) => setP({ ...p, acknowledge_self_managed: e.target.checked })} />
+              {t.profile.selfManaged}
+            </label>
+            <Link to="/settings#health-limits">{t.profile.limitsLink}</Link>
+          </div>
+        )}
         <label>{t.profile.customKcal}
           <input type="number" step="1" value={p.custom_target_kcal ?? ""} onChange={num("custom_target_kcal")} />
         </label>
@@ -126,9 +138,15 @@ export function ProfilePage({ onboarding = false }: { onboarding?: boolean }) {
         <button type="submit" disabled={!accepted}>{t.profile.save}</button>
       </form>
 
+      {!onboarding && <DislikesSection />}
+
       {needs.data && (
         <section className="card">
           <h3>{t.needs.title}</h3>
+          <Notices notices={needs.data.notices.filter((n) => n.code !== "DISCLAIMER")} />
+          {needs.data.needs.warnings.includes("LIMITS_REDUCE_ENERGY") && (
+            <p className="notice notice-warn">{t.needs.limitsReduceEnergy}</p>
+          )}
           <p className="small muted">
             {t.needs.bmr} {fmtKcal(needs.data.needs.bmr_kcal)} kcal {"\u00d7"} {needs.data.needs.activity_factor} = {t.needs.tdee}{" "}
             {fmtKcal(needs.data.needs.tdee_kcal)} kcal · {fmt(t.needs.mealsPerDay, { n: needs.data.needs.meals_per_day })}

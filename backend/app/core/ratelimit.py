@@ -19,7 +19,9 @@ LOGIN_FAILURES_IP = (30, 15 * 60)  # theo IP, mọi email (chống credential st
 REGISTER = (10, 60 * 60)  # theo IP
 CHAT = (20, 60)  # theo user
 RECIPE = (10, 60)  # theo user
-MAX_WINDOW_S = max(w for _, w in (LOGIN_FAILURES, LOGIN_FAILURES_IP, REGISTER, CHAT, RECIPE))
+EXTRACT = (5, 60 * 60)  # theo user — trích xuất giới hạn bằng LLM vision
+SWAP = (20, 60)  # theo user — đổi một bữa (chạy solver)
+MAX_WINDOW_S = max(w for _, w in (LOGIN_FAILURES, LOGIN_FAILURES_IP, REGISTER, CHAT, RECIPE, EXTRACT, SWAP))
 MAX_KEYS = 10_000
 
 

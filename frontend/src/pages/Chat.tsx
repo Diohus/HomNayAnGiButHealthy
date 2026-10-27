@@ -1,12 +1,16 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { api, post } from "../api/client";
 import { useFoodNames } from "../api/hooks";
 import { fmtKcal } from "../format";
 import { errorMessage, fmt, useI18n } from "../i18n";
-import type { ChatReply, Proposal } from "../types";
+import type { ChatReply, ClarifyItem, Proposal } from "../types";
 
-interface Msg { role: "user" | "assistant"; text: string; kind?: string; proposals?: Proposal[]; unknown?: string[] }
+interface Msg {
+  role: "user" | "assistant"; text: string; kind?: string; proposals?: Proposal[]; unknown?: string[];
+  clarify?: ClarifyItem[]; source?: string; // source: original message, resent with the user's choice
+}
 
 function LabelForm({ name, onDone }: { name: string; onDone: (msg: string) => void }) {
   const [f, setF] = useState({ name_vi: name, energy_kcal: "", protein_g: "", carb_g: "", fat_g: "", portion_g: "" });
@@ -66,8 +70,9 @@ function ProposalCard({ p, onApplied }: { p: Proposal; onApplied: (m: string) =>
     try {
       await post(`/chat/proposals/${p.id}/apply`);
       setState("done");
-      await qc.invalidateQueries({ queryKey: ["menu"] });
-      onApplied(t.chat.applied);
+      await qc.invalidateQueries({ queryKey: [p.preference ? "dislikes" : "menu"] });
+      if (p.key === "log" || p.key === "rebalance") await qc.invalidateQueries({ queryKey: ["shopping"] });
+      onApplied(p.preference ? t.chat.dislikeSaved : t.chat.applied);
     } catch (x) {
       setErr(errorMessage(x, t));
       setState("idle");
@@ -76,14 +81,16 @@ function ProposalCard({ p, onApplied }: { p: Proposal; onApplied: (m: string) =>
   return (
     <div className="proposal">
       <p><strong>{p.label}</strong></p>
-      <details>
-        <summary className="small">{fmt(t.chat.details, { kcal: fmtKcal(p.plan.totals.energy_kcal ?? 0) })}</summary>
-        {p.plan.meals.map((m) => (
-          <p key={m.slot} className="small">
-            {t.slots[m.slot]}: {m.items.map((i) => `${Math.round(i.grams)} g ${name(i.food_code).toLowerCase()}`).join(", ")}
-          </p>
-        ))}
-      </details>
+      {p.plan && (
+        <details>
+          <summary className="small">{fmt(t.chat.details, { kcal: fmtKcal(p.plan.totals.energy_kcal ?? 0) })}</summary>
+          {p.plan.meals.map((m) => (
+            <p key={m.slot} className="small">
+              {t.slots[m.slot]}: {m.items.map((i) => `${Math.round(i.grams)} g ${name(i.food_code).toLowerCase()}`).join(", ")}
+            </p>
+          ))}
+        </details>
+      )}
       {err && <p className="error">{err}</p>}
       <button disabled={state !== "idle"} onClick={apply}>{state === "done" ? "✓" : t.chat.apply}</button>
     </div>
@@ -101,22 +108,33 @@ export function ChatPage() {
   const { t } = useI18n();
   const msgs: Msg[] = [...(history.data ?? []), ...extra];
 
+  async function ask(m: string, resolved?: Record<string, string>) {
+    setBusy(true);
+    try {
+      const r = await post<ChatReply>("/chat", { message: m, ...(resolved ? { resolved } : {}) });
+      setExtra((x) => [...x, { role: "assistant", text: r.text, kind: r.kind, proposals: r.proposals,
+                               unknown: r.kind === "need_label" ? r.unknown_mentions : undefined,
+                               clarify: r.kind === "clarify" ? r.clarify : undefined, source: m }]);
+    } catch (x) {
+      setExtra((xs) => [...xs, { role: "assistant", text: errorMessage(x, t), kind: "error" }]);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function send(e: React.FormEvent) {
     e.preventDefault();
     if (!text.trim()) return;
     const m = text;
     setText("");
     setExtra((x) => [...x, { role: "user", text: m }]);
-    setBusy(true);
-    try {
-      const r = await post<ChatReply>("/chat", { message: m });
-      setExtra((x) => [...x, { role: "assistant", text: r.text, kind: r.kind, proposals: r.proposals,
-                               unknown: r.kind === "need_label" ? r.unknown_mentions : undefined }]);
-    } catch (x) {
-      setExtra((xs) => [...xs, { role: "assistant", text: errorMessage(x, t), kind: "error" }]);
-    } finally {
-      setBusy(false);
-    }
+    await ask(m);
+  }
+
+  // Clarify: the user picks one option per mention, then the original message is resent with the choices.
+  function pick(m: Msg, mention: string, code: string, name: string) {
+    setExtra((x) => [...x, { role: "user", text: `${mention} → ${name}` }]);
+    void ask(m.source ?? "", { [mention]: code });
   }
 
   return (
@@ -128,6 +146,16 @@ export function ChatPage() {
             {m.proposals?.map((p) => (
               <ProposalCard key={p.id} p={p} onApplied={(s) => setExtra((x) => [...x, { role: "assistant", text: s }])} />
             ))}
+            {m.clarify?.map((c) => (
+              <div key={c.mention} className="clarify" role="group" aria-label={fmt(t.chat.clarifyFor, { mention: c.mention })}>
+                <p className="small">“{c.mention}”</p>
+                {c.options.map((o) => (
+                  <button key={o.code} type="button" className="secondary" disabled={busy}
+                          onClick={() => pick(m, c.mention, o.code, o.name)}>{o.name}</button>
+                ))}
+              </div>
+            ))}
+            {m.kind === "allergy_redirect" && <Link to="/profile">{t.chat.openProfile}</Link>}
             {m.unknown !== undefined && (
               <LabelForm name={m.unknown[0] ?? ""} onDone={(s) => setExtra((x) => [...x, { role: "assistant", text: s }])} />
             )}

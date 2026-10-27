@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Dish, Food, MenuDay, Needs, Notice, Profile } from "../types";
+import type { Dish, Food, HealthLimitRow, MenuDay, Needs, Notice, Profile } from "../types";
 import { useI18n } from "../i18n";
 import { api, post } from "./client";
 
@@ -34,8 +34,12 @@ export function useProfile() {
 export function useNeeds(enabled = true) {
   return useQuery({
     queryKey: ["needs"], enabled,
-    queryFn: () => api<{ needs: Needs; notices: Notice[]; expert_confirmation_required: string[] }>("/needs"),
+    queryFn: () => api<{ needs: Needs; notices: Notice[]; conditions_without_limits: string[] }>("/needs"),
   });
+}
+
+export function useHealthLimits() {
+  return useQuery({ queryKey: ["health-limits"], queryFn: () => api<HealthLimitRow[]>("/health-limits") });
 }
 
 export function useMenu(day: string) {

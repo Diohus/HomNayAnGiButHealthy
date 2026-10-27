@@ -8,7 +8,6 @@ VI: dict[str, str] = {
     "error.ALLERGEN_CONFLICT.custom": "Sản phẩm này mâu thuẫn với {reason} bạn đã khai báo.",
     "error.ALLERGEN_CONFLICT.proposal": "Đề xuất chứa nguyên liệu không còn phù hợp với hồ sơ.",
     "error.BAD_CREDENTIALS": "Email hoặc mật khẩu không đúng.",
-    "error.CONFIRMATION_REQUIRED": "Bạn cần xác nhận đã tham khảo chuyên gia y tế.",
     "error.DAYS_RANGE.view": "Chỉ xem được 1–14 ngày mỗi lần.",
     "error.DAYS_RANGE.generate": "Chỉ sinh được 1–7 ngày mỗi lần.",
     "error.DELTA_RANGE": "Mỗi lần chỉ chỉnh từ 1 đến 500 g.",
@@ -18,8 +17,6 @@ VI: dict[str, str] = {
         "Ứng dụng sẽ tạm dừng các đề xuất cắt giảm năng lượng."
     ),
     "error.EMAIL_EXISTS": "Email đã được đăng ký.",
-    "error.EXPERT_CONFIRMATION_REQUIRED":
-        "Cần xác nhận đã tham khảo chuyên gia và nhập giới hạn an toàn trước khi sinh thực đơn.",
     "error.FOOD_NOT_FOUND": "Không có nguyên liệu này trong cơ sở dữ liệu.",
     "error.GRAMS_RANGE": "Khối lượng phải trong khoảng 1–3000 g.",
     "error.HTTP": "Yêu cầu không hợp lệ.",
@@ -27,7 +24,7 @@ VI: dict[str, str] = {
     "error.INVALID_REFRESH": "Phiên đăng nhập đã hết hạn.",
     "error.INVALID_TOKEN": "Phiên đăng nhập không hợp lệ hoặc đã hết hạn.",
     "error.ITEM_NOT_FOUND": "Không tìm thấy nguyên liệu trong bữa này.",
-    "error.LIMITS_REQUIRED": "Cần nhập ít nhất một giới hạn do chuyên gia cung cấp (ví dụ natri, đạm, kali).",
+    "error.LIMITS_REQUIRED": "Cần nhập ít nhất một giới hạn (ví dụ natri, đạm, kali).",
     "error.LOW_ENERGY_ACK_REQUIRED": (
         "Mục tiêu {requested_kcal} kcal thấp hơn mức an toàn ~{floor_kcal} kcal/ngày. "
         "Hãy xác nhận rõ ràng nếu bạn vẫn muốn tiếp tục (nên hỏi ý kiến chuyên gia)."
@@ -35,7 +32,6 @@ VI: dict[str, str] = {
     "error.MEAL_NOT_FOUND": "Không tìm thấy bữa ăn.",
     "error.MENU_NOT_FOUND": "Chưa có thực đơn cho ngày này.",
     "error.MESSAGE_LENGTH": "Tin nhắn phải có 1–1000 ký tự.",
-    "error.NOT_SENSITIVE_CONDITION": "Tình trạng này không cần xác nhận chuyên gia.",
     "error.PANTRY_ITEM": "Nguyên liệu có sẵn được chỉnh trong danh sách “Có sẵn trong nhà”.",
     "error.PROFILE_REQUIRED": "Bạn cần nhập hồ sơ sức khỏe trước.",
     "error.PROPOSAL_APPLIED": "Đề xuất này đã được áp dụng.",
@@ -46,6 +42,87 @@ VI: dict[str, str] = {
     "error.STALE_PROPOSAL": "Thực đơn đã thay đổi sau khi đề xuất được tạo. Hãy hỏi lại chatbot.",
     "error.UNAUTHENTICATED": "Bạn cần đăng nhập.",
     "error.VALIDATION_ERROR": "Dữ liệu không hợp lệ.",
+    # ---------- Vòng 6: nhật ký đã ăn, đi chợ, không thích dạng chữ ----------
+    "error.SERVINGS_RANGE": "Số người ăn phải trong khoảng 1–10.",
+    "error.SLOT_INVALID": "Bữa không hợp lệ.",
+    "error.INTAKE_NOT_FOUND": "Không tìm thấy mục này trong nhật ký.",
+    "error.NOTHING_TO_REBALANCE": "Các bữa hôm nay đều đã đánh dấu ăn; không còn bữa nào để cân lại.",
+    "chat.dislike_text_label": "Mình sẽ tránh {food} trong cách chế biến",
+    "chat.log_confirm": "Ghi vào nhật ký {slot} hôm nay: {items}?",
+    "chat.log_label": "Ghi vào nhật ký hôm nay",
+    "chat.rebalance_label": "Cân lại các bữa còn lại",
+    "chat.ai_estimate_short": "AI ước tính",
+    "shop.category.protein": "Thịt, cá, trứng, đậu",
+    "shop.category.carb": "Tinh bột",
+    "shop.category.vegetable": "Rau củ",
+    "shop.category.dairy": "Sữa và chế phẩm",
+    "shop.category.fruit": "Trái cây",
+    "shop.category.nut": "Các loại hạt",
+    "shop.category.fat": "Dầu ăn",
+    "shop.category.snack": "Đồ ăn vặt",
+    # ---------- Vòng 5: hiểu món bằng LLM, đổi bữa, không thích ----------
+    "error.NO_ALTERNATIVE": "Không còn món nào khác phù hợp cho bữa này (đã loại món hiện tại, món không thích và món lặp quá 3 ngày).",
+    "error.PREFERENCE_NOT_FOUND": "Không tìm thấy mục này trong danh sách không thích.",
+    "chat.clarify": "Mình chưa chắc bạn muốn nói món nào. Bạn chọn giúp mình nhé:",
+    "chat.refusal_component": "Mình không thể đề xuất {food} vì có {component} — mâu thuẫn với {reason} bạn đã khai báo.",
+    "chat.ai_estimate_note": (
+        "Khối lượng nguyên liệu của {dishes} do AI ước tính (sai số cao); dinh dưỡng vẫn tính từ cơ sở dữ liệu. "
+        "Bạn có thể chỉnh +/- sau khi áp dụng."
+    ),
+    "chat.allergy_redirect": (
+        "Dị ứng là thông tin sức khỏe quan trọng nên mình không tự sửa hồ sơ qua trò chuyện. Hãy cập nhật mục "
+        "Dị ứng trong Hồ sơ; sau đó thực đơn sẽ tự loại hoàn toàn thực phẩm đó."
+    ),
+    "chat.dislike_confirm": "Bạn muốn mình hạn chế những món này trong thực đơn? Bấm Áp dụng để thêm vào danh sách không thích.",
+    "chat.dislike_label": "Thêm “{food}” vào danh sách không thích",
+    "chat.dislike_unknown": (
+        "Mình chưa có “{names}” trong dữ liệu nguyên liệu nên chưa thể loại khỏi thực đơn. "
+        "Bạn có thể bỏ khi nấu, hoặc thêm món/nguyên liệu không thích trong Hồ sơ."
+    ),
+    "chat.dislike_none": (
+        "Mình chưa nhận ra bạn không thích món nào. Bạn có thể thêm món/nguyên liệu không thích trong Hồ sơ."
+    ),
+    # ---------- Vòng 4: tự quản lý + giới hạn do người dùng cung cấp ----------
+    "error.SELF_MANAGED_ACK_REQUIRED": (
+        "Bạn đã chọn tình trạng cần theo dõi đặc biệt ({conditions}). Ứng dụng không có bác sĩ theo dõi; thực đơn "
+        "chỉ là gợi ý và có sai số. Nếu bác sĩ đã cho bạn giới hạn (đạm, natri, kali…), hãy nhập trong Cài đặt. "
+        "Vui lòng xác nhận bạn tự quản lý chế độ ăn để tiếp tục."
+    ),
+    "error.LIMIT_NOT_FOUND": "Không tìm thấy giới hạn này.",
+    "error.AI_CONSENT_REQUIRED": "Bạn cần đồng ý gửi ảnh/văn bản tới nhà cung cấp AI để đọc tài liệu.",
+    "error.EXTRACT_INPUT_REQUIRED": "Hãy gửi đúng một ảnh hoặc một đoạn văn bản.",
+    "error.TEXT_TOO_LONG": "Văn bản tối đa {max} ký tự.",
+    "error.FILE_TOO_LARGE": "Ảnh tối đa {max_mb} MB.",
+    "error.INVALID_IMAGE": "Tệp không phải ảnh hợp lệ (chỉ nhận JPEG, PNG, WebP).",
+    "error.EXTRACTION_UNAVAILABLE": "Hiện chưa đọc được tài liệu bằng AI. Bạn vẫn có thể nhập giới hạn bằng tay.",
+    "notice.NO_LIMITS_KIDNEY": (
+        "Bạn có bệnh thận nhưng chưa nhập giới hạn riêng (đạm, natri, kali, phốt pho). Thực đơn đang dùng mục tiêu "
+        "chung nên có thể không phù hợp. Nếu bác sĩ đã cho chỉ định, hãy nhập trong Cài đặt → Giới hạn sức khỏe."
+    ),
+    "notice.NO_LIMITS_CARDIO": (
+        "Bạn có bệnh tim mạch nhưng chưa nhập giới hạn riêng (natri, chất béo). Thực đơn đang dùng mục tiêu chung nên "
+        "có thể không phù hợp. Nếu bác sĩ đã cho chỉ định, hãy nhập trong Cài đặt → Giới hạn sức khỏe."
+    ),
+    "notice.NO_LIMITS_LIVER": (
+        "Bạn có bệnh gan nhưng chưa nhập giới hạn riêng (đạm, natri, năng lượng). Thực đơn đang dùng mục tiêu chung "
+        "nên có thể không phù hợp. Nếu bác sĩ đã cho chỉ định, hãy nhập trong Cài đặt → Giới hạn sức khỏe."
+    ),
+    "notice.NO_LIMITS_PREGNANT": (
+        "Bạn đang mang thai nhưng chưa nhập giới hạn riêng. Nhu cầu năng lượng và vi chất thay đổi theo giai đoạn; "
+        "thực đơn đang dùng mục tiêu chung nên có thể không phù hợp. Nếu bác sĩ đã cho chỉ định, hãy nhập trong "
+        "Cài đặt → Giới hạn sức khỏe."
+    ),
+    "notice.NO_LIMITS_LACTATING": (
+        "Bạn đang cho con bú nhưng chưa nhập giới hạn riêng. Nhu cầu năng lượng và vi chất cao hơn bình thường; "
+        "thực đơn đang dùng mục tiêu chung nên có thể không phù hợp. Nếu bác sĩ đã cho chỉ định, hãy nhập trong "
+        "Cài đặt → Giới hạn sức khỏe."
+    ),
+    "ref.user_limit.manual": "Do người dùng cung cấp (nhập tay)",
+    "ref.user_limit.document": "Do người dùng cung cấp (trích từ tài liệu)",
+    "extract.reject.out_of_range": "Giá trị ngoài khoảng hợp lý, có thể đọc sai.",
+    "extract.reject.unit_mismatch": "Đơn vị không phù hợp với chỉ số này.",
+    "extract.reject.quote_not_found": "Không tìm thấy đoạn trích dẫn trong văn bản gốc.",
+    "extract.reject.empty_quote": "Thiếu trích dẫn nguyên văn từ tài liệu.",
 
     # ---------- Lý do loại nguyên liệu (thay cho mã thô "allergy:fish") ----------
     "reason.allergy": "dị ứng {name}",
@@ -159,7 +236,6 @@ VI: dict[str, str] = {
     "ref.applies.female": "nữ, {age} tuổi",
     "ref.applies.adults": "người trưởng thành",
     "ref.applies.athletes": "người tập luyện",
-    "ref.expert_limit": "Giới hạn do chuyên gia của người dùng cung cấp",
     "ref.activity_source": "Hệ số PAL phổ biến (McArdle, Katch & Katch, Exercise Physiology) — giả định",
     "ref.energy_floor_source": "NHLBI Obesity Education Initiative 1998 (giả định 1200 nữ / 1500 nam, cần xác minh)",
     "ref.sodium_source": "NASEM. Dietary Reference Intakes for Sodium and Potassium. 2019 (CDRR, ≥14 tuổi)",
@@ -195,10 +271,6 @@ VI: dict[str, str] = {
         "hoặc “hôm nay cheat day, ăn pizza”. Mình sẽ điều chỉnh thực đơn cho phù hợp."
     ),
     "chat.refusal": "Mình không thể đề xuất {food} vì mâu thuẫn với {reason} bạn đã khai báo.",
-    "chat.blocked": (
-        "Bạn có tình trạng sức khỏe cần chuyên gia xác nhận trước khi ứng dụng đề xuất thực đơn ({conditions}). "
-        "Hãy hoàn tất bước xác nhận trong phần Cài đặt."
-    ),
     "chat.slot_not_in_plan": "{slot} không có trong thực đơn của bạn (theo mức hoạt động), mình xếp vào bữa gần nhất.",
     "chat.day.today": "hôm nay",
     "chat.day.tomorrow": "ngày mai",

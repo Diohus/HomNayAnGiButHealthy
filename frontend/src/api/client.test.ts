@@ -86,3 +86,17 @@ describe("refresh single-flight", () => {
     for (const [, init] of f.mock.calls) expect((init.headers as Record<string, string>)["Accept-Language"]).toBe("en");
   });
 });
+
+describe("upload ảnh (FormData)", () => {
+  it("không đặt Content-Type JSON để trình duyệt tự thêm multipart boundary", async () => {
+    const { postForm, setTokens } = await load();
+    setTokens("at-2", "rt-1");
+    const form = new FormData();
+    form.append("text", "Natri 2000 mg");
+    await postForm("/health-limits/extract", form);
+    const f = fetch as unknown as { mock: { calls: [string, RequestInit][] } };
+    const [, init] = f.mock.calls[0];
+    expect((init.headers as Record<string, string>)["Content-Type"]).toBeUndefined();
+    expect(init.body).toBe(form);
+  });
+});

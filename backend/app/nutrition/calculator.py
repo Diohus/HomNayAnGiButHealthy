@@ -3,7 +3,7 @@ from app.nutrition import references as R
 from app.nutrition.schemas import (
     DIABETES,
     Condition,
-    ExpertLimits,
+    HealthLimits,
     HealthProfileIn,
     LowEnergyNotAcknowledged,
     NutrientTarget,
@@ -27,15 +27,21 @@ def _target(code, unit, value, ref, adjusted=None, tol=TOLERANCE) -> NutrientTar
     )
 
 
-def compute_needs(p: HealthProfileIn, expert_limits: ExpertLimits | None = None,
-                  tolerance: float = TOLERANCE, lang: Lang = "vi") -> NutritionNeeds:
+def compute_needs(p: HealthProfileIn, limits: HealthLimits | None = None,
+                  tolerance: float = TOLERANCE, lang: Lang = "vi",
+                  limit_sources: dict[str, str] | None = None) -> NutritionNeeds:
     """Tính nhu cầu hằng ngày. Ném LowEnergyNotAcknowledged nếu mục tiêu tự đặt dưới sàn mà chưa xác nhận.
+    `limits`: giới hạn do người dùng cung cấp (gộp chặt nhất); `limit_sources`: chỉ số → "manual" | "document".
     `lang` chỉ ảnh hưởng chữ hiển thị (nguồn, ghi chú, giả định), không ảnh hưởng số liệu."""
     warnings: list[str] = []
     assumptions: list[str] = []
     applies = tr("ref.applies.male" if p.sex == Sex.male else "ref.applies.female", lang, age=p.age)
     adults = tr("ref.applies.adults", lang)
-    expert_source = tr("ref.expert_limit", lang)
+    L = limits or HealthLimits()
+    srcs = limit_sources or {}
+
+    def user_source(field: str) -> str:
+        return tr(f"ref.user_limit.{srcs.get(field, 'manual')}", lang)
 
     # --- Năng lượng ---
     bmr = mifflin_st_jeor(p.sex, p.weight_kg, p.height_cm, p.age)
@@ -61,9 +67,9 @@ def compute_needs(p: HealthProfileIn, expert_limits: ExpertLimits | None = None,
             energy_adjust.append("energy_floor")
             warnings.append("ENERGY_RAISED_TO_FLOOR")
 
-    if expert_limits and expert_limits.energy_kcal_max and energy > expert_limits.energy_kcal_max:
-        energy = expert_limits.energy_kcal_max
-        energy_adjust.append("expert_limit")
+    if L.energy_kcal_max and energy > L.energy_kcal_max:
+        energy = L.energy_kcal_max
+        energy_adjust.append("user_limit")
 
     # --- Protein ---
     if p.goal.value == "gain_muscle":
@@ -75,9 +81,10 @@ def compute_needs(p: HealthProfileIn, expert_limits: ExpertLimits | None = None,
         protein_ref = Reference(source=R.DRI_MACRO, applies_to=adults, note=tr("ref.note.protein", lang))
     protein_g = min(protein_g, R.AMDR["protein"][1] * energy / 4)
     protein_adjust = []
-    if expert_limits and expert_limits.protein_g_max and protein_g > expert_limits.protein_g_max:
-        protein_g = expert_limits.protein_g_max
-        protein_adjust.append("expert_limit")
+    if L.protein_g_max and protein_g > L.protein_g_max:
+        protein_g = L.protein_g_max
+        protein_adjust.append("user_limit")
+        protein_ref = Reference(source=user_source("protein_g_max"), applies_to=applies)
 
     # --- Carb / Fat ---
     p_kcal = protein_g * 4
@@ -107,7 +114,39 @@ def compute_needs(p: HealthProfileIn, expert_limits: ExpertLimits | None = None,
             carb_kcal += shift
     fat_kcal = max(fat_kcal, R.AMDR["fat"][0] * energy)
 
+    # --- Giới hạn carb/béo do người dùng cung cấp ---
+    # Không tự bù bằng chất khác NGOÀI AMDR: chỉ dồn phần thiếu sang chất còn chỗ (trong AMDR và trong giới hạn
+    # của người dùng); vẫn thiếu ⇒ hạ mục tiêu năng lượng và báo LIMITS_REDUCE_ENERGY.
+    fat_adjust: list[str] = []
+    capped = False
+    if L.carb_g_max and carb_kcal > L.carb_g_max * 4:
+        carb_kcal, capped = L.carb_g_max * 4, True
+        carb_adjust.append("user_limit")
+    if L.fat_g_max and fat_kcal > L.fat_g_max * 9:
+        fat_kcal, capped = L.fat_g_max * 9, True
+        fat_adjust.append("user_limit")
+    if capped:
+        def room(amdr_key: str, current: float, cap_kcal: float | None) -> float:
+            top = R.AMDR[amdr_key][1] * energy
+            return max(0.0, min(top, cap_kcal if cap_kcal else top) - current)
+
+        deficit = energy - (p_kcal + carb_kcal + fat_kcal)
+        if deficit > 0:
+            add = min(deficit, room("fat", fat_kcal, L.fat_g_max * 9 if L.fat_g_max else None))
+            fat_kcal, deficit = fat_kcal + add, deficit - add
+            add = min(deficit, room("carb", carb_kcal, L.carb_g_max * 4 if L.carb_g_max else None))
+            carb_kcal, deficit = carb_kcal + add, deficit - add
+            add = min(deficit, room("protein", p_kcal, L.protein_g_max * 4 if L.protein_g_max else None))
+            p_kcal, deficit = p_kcal + add, deficit - add
+            protein_g = p_kcal / 4
+        if deficit > 1:
+            energy -= deficit
+            energy_adjust.append("user_limit")
+            warnings.append("LIMITS_REDUCE_ENERGY")
+
     macro_ref = Reference(source=R.DRI_MACRO, applies_to=adults, note=tr("ref.note.amdr", lang))
+    carb_ref = Reference(source=user_source("carb_g_max"), applies_to=applies) if L.carb_g_max else macro_ref
+    fat_ref = Reference(source=user_source("fat_g_max"), applies_to=applies) if L.fat_g_max else macro_ref
     targets = [
         _target("energy_kcal", "kcal", energy, Reference(
             source=f"{R.MIFFLIN}; {tr(R.ACTIVITY_SOURCE, lang)}", applies_to=applies,
@@ -115,8 +154,8 @@ def compute_needs(p: HealthProfileIn, expert_limits: ExpertLimits | None = None,
                     floor=f"{floor:.0f}", floor_source=tr(R.ENERGY_FLOOR_SOURCE, lang)),
         ), energy_adjust, tolerance),
         _target("protein_g", "g", protein_g, protein_ref, protein_adjust, tolerance),
-        _target("carb_g", "g", carb_kcal / 4, macro_ref, carb_adjust, tolerance),
-        _target("fat_g", "g", fat_kcal / 9, macro_ref, [], tolerance),
+        _target("carb_g", "g", carb_kcal / 4, carb_ref, carb_adjust, tolerance),
+        _target("fat_g", "g", fat_kcal / 9, fat_ref, fat_adjust, tolerance),
         NutrientTarget(code="fiber_g", unit="g", kind="min", value=R.FIBER_G_PER_1000_KCAL * energy / 1000,
                        reference=Reference(source=R.DRI_MACRO, applies_to=adults, note="AI 14 g / 1000 kcal")),
     ]
@@ -133,22 +172,20 @@ def compute_needs(p: HealthProfileIn, expert_limits: ExpertLimits | None = None,
     sodium_max, sodium_ref, sodium_adj = R.SODIUM_CDRR_MG, tr(R.SODIUM_SOURCE, lang), []
     if Condition.hypertension in p.conditions:
         sodium_max, sodium_ref, sodium_adj = R.SODIUM_HTN_MG, tr(R.SODIUM_HTN_SOURCE, lang), ["hypertension"]
-    if expert_limits and expert_limits.sodium_mg_max:
-        sodium_max, sodium_ref, sodium_adj = expert_limits.sodium_mg_max, expert_source, ["expert_limit"]
+    if L.sodium_mg_max:
+        sodium_max, sodium_ref, sodium_adj = L.sodium_mg_max, user_source("sodium_mg_max"), ["user_limit"]
     targets.append(NutrientTarget(
         code="sodium_mg", unit="mg", kind="max", value=sodium_max,
         reference=Reference(source=sodium_ref, applies_to=applies, note=tr("ref.note.sodium", lang)),
         adjusted_for=sodium_adj,
     ))
-    if expert_limits:
-        for code, attr in (("potassium_mg", "potassium_mg_max"), ("phosphorus_mg", "phosphorus_mg_max")):
-            v = getattr(expert_limits, attr)
-            if v:
-                targets.append(NutrientTarget(
-                    code=code, unit="mg", kind="max", value=v,
-                    reference=Reference(source=expert_source),
-                    adjusted_for=["expert_limit"],
-                ))
+    for code, attr in (("potassium_mg", "potassium_mg_max"), ("phosphorus_mg", "phosphorus_mg_max")):
+        if v := getattr(L, attr):
+            targets.append(NutrientTarget(
+                code=code, unit="mg", kind="max", value=v,
+                reference=Reference(source=user_source(attr)),
+                adjusted_for=["user_limit"],
+            ))
 
     if set(p.conditions) & DIABETES and p.uses_insulin_or_glucose_meds:
         warnings.append("CONSULT_DOCTOR_INSULIN")

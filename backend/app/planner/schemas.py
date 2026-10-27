@@ -52,6 +52,14 @@ class PlanRequest(BaseModel):
     min_meal_energy_kcal: float | None = None  # ràng buộc CỨNG: tổng năng lượng các bữa chính (ngày cheat day)
     prefer_low_gi: bool = False
     time_limit_s: int = 10
+    # Bữa giữ nguyên (đổi một bữa): không sinh biến cho các bữa này, item của chúng truyền qua `locked` ở đúng slot.
+    # Bữa có item origin="ai_estimate" (món ghép AI ước tính) cũng tự giữ nguyên.
+    frozen_slots: set[str] = set()
+    # Không thích: ràng buộc MỀM (phạt nặng); khác dị ứng là ràng buộc cứng (đã lọc khỏi catalog)
+    disliked_foods: set[str] = set()
+    disliked_dishes: set[str] = set()
+    # Sàn năng lượng theo từng bữa (cân lại sau khi ăn): phạt rất nặng nếu thấp hơn — không bỏ bữa
+    min_slot_energy_kcal: dict[str, float] = {}
 
 
 class PlanItem(BaseModel):

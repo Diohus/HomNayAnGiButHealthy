@@ -27,3 +27,9 @@ export function addDays(iso: string, n: number): string {
   d.setDate(d.getDate() + n);
   return isoDay(d);
 }
+
+// Search key without Vietnamese diacritics, so "ca hoi" matches the accented name.
+export function foldText(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\u0111/g, "d").replace(/\u0110/g, "D")
+    .toLowerCase();
+}

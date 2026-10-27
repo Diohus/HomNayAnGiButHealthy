@@ -10,6 +10,7 @@ import { ChatPage } from "./pages/Chat";
 import { PantryPage } from "./pages/Pantry";
 import { ProfilePage } from "./pages/Profile";
 import { SettingsPage } from "./pages/Settings";
+import { ShoppingPage } from "./pages/Shopping";
 import { TodayPage } from "./pages/Today";
 import { applyTheme, getTheme } from "./theme";
 import "./styles.css";
@@ -46,6 +47,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         <NavLink to="/" end>{t.nav.today}</NavLink>
         <NavLink to="/chat">{t.nav.chat}</NavLink>
         <NavLink to="/pantry">{t.nav.pantry}</NavLink>
+        <NavLink to="/shopping">{t.nav.shopping}</NavLink>
         <NavLink to="/profile">{t.nav.profile}</NavLink>
         <NavLink to="/settings" aria-label={t.nav.settings} title={t.nav.settings}>⚙</NavLink>
       </nav>
@@ -65,6 +67,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="/" element={<Shell><TodayPage /></Shell>} />
           <Route path="/chat" element={<Shell><ChatPage /></Shell>} />
           <Route path="/pantry" element={<Shell><PantryPage /></Shell>} />
+          <Route path="/shopping" element={<Shell><ShoppingPage /></Shell>} />
           <Route path="/profile" element={<Shell><ProfilePage /></Shell>} />
           <Route path="/settings" element={<Shell><SettingsPage /></Shell>} />
         </Routes>

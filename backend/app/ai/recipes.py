@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 from app.ai.providers import LLMProvider
 from app.ai.service import call_structured
 from app.core.i18n import Lang, tr
+from app.foods.matching import has_diacritics, normalize
 
 
 class Seasoning(BaseModel):
@@ -88,12 +89,18 @@ def _terms(allergies, diets) -> list[str]:
                   key=len, reverse=True)
 
 
-def violations(text: str, allergies, diets, allowed_phrases: list[str] = ()) -> list[str]:
-    """`allowed_phrases`: tên nguyên liệu đã qua bộ lọc (vd. "sữa đậu nành" hợp lệ với người dị ứng sữa bò)."""
+def violations(text: str, allergies, diets, allowed_phrases: list[str] = (), avoid: list[str] = ()) -> list[str]:
+    """`allowed_phrases`: tên nguyên liệu đã qua bộ lọc (vd. "sữa đậu nành" hợp lệ với người dị ứng sữa bò).
+    `avoid`: từ "không thích" ngoài catalog ("hành", "ngò") — so khớp theo từ; từ gõ không dấu thì so không dấu,
+    có dấu thì giữ dấu (tránh "hành" ≡ "hạnh nhân")."""
     low = text.lower()
     for ph in sorted(allowed_phrases, key=len, reverse=True):
         low = low.replace(ph.lower(), " ")
     found = [t for t in _terms(allergies, diets) if re.search(rf"(?<!\w){re.escape(t)}(?!\w)", low)]
+    for a in avoid:
+        keep = has_diacritics(a)
+        if f" {normalize(a, keep).strip()} " in normalize(low, keep) and normalize(a, keep).strip():
+            found.append(f"avoid:{a}")
     if NUMERIC_CLAIM.search(text):
         found.append("NUMERIC_CLAIM")
     return found
@@ -107,31 +114,33 @@ SEASONINGS = ("garlic", "scallion", "pepper", "ginger", "fish_sauce", "salt")
 
 
 def template_recipe(dish_name: str | None, ingredient_names: list[str], allergies, diets,
-                    low_sodium: bool, lang: Lang = "vi") -> Recipe:
+                    low_sodium: bool, lang: Lang = "vi", avoid: list[str] = ()) -> Recipe:
     """Fallback tĩnh theo ngôn ngữ, an toàn với mọi hạn chế (lọc lại bằng chính bộ kiểm tra, cả hai bộ từ khóa)."""
     candidates = [
         Seasoning(name=tr(f"recipe.season.{k}", lang),
                   note=tr(f"recipe.season.{k}.note" + (".low_sodium" if k == "salt" and low_sodium else ""), lang))
         for k in SEASONINGS
     ]
-    seasonings = [s for s in candidates if not violations(f"{s.name} {s.note}", allergies, diets)]
+    seasonings = [s for s in candidates if not violations(f"{s.name} {s.note}", allergies, diets, avoid=avoid)]
     main = dish_name or tr("recipe.default_dish", lang)
     steps = [tr("recipe.step.prep", lang), tr("recipe.step.main", lang, dish=main.lower()),
              tr("recipe.step.veg", lang), tr("recipe.step.starch", lang)]
+    steps = [x for x in steps if not violations(x, [], [], ingredient_names, avoid)] or [tr("recipe.step.prep", lang)]
     tip = tr("recipe.tip", lang) + (" " + tr("recipe.tip.low_sodium", lang) if low_sodium else "")
     return Recipe(steps=steps, seasonings=seasonings, tip=tip.strip(), source="template")
 
 
 def generate_recipe(provider: LLMProvider | None, dish_name: str | None, ingredient_names: list[str],
-                    allergies, diets, low_sodium: bool, max_retries: int = 2, lang: Lang = "vi") -> Recipe:
+                    allergies, diets, low_sodium: bool, max_retries: int = 2, lang: Lang = "vi",
+                    avoid: list[str] = ()) -> Recipe:
     """`dish_name`, `ingredient_names` đã theo ngôn ngữ `lang`. Prompt và template cũng theo `lang`."""
-    banned = _terms(allergies, diets)
+    banned = [*_terms(allergies, diets), *avoid]
     user = tr("recipe.user", lang, dish=dish_name or tr("recipe.default_dish", lang),
               ingredients=", ".join(ingredient_names),
               banned=", ".join(banned) if banned else tr("recipe.none", lang),
               low_sodium=tr("recipe.low_sodium_hint", lang) if low_sodium else "")
     out, _ = call_structured(provider, tr("recipe.system", lang), user, RecipeOut, max_retries,
-                             validate=lambda r: violations(_all_text(r), allergies, diets, ingredient_names))
+                             validate=lambda r: violations(_all_text(r), allergies, diets, ingredient_names, avoid))
     if out is None:
-        return template_recipe(dish_name, ingredient_names, allergies, diets, low_sodium, lang)
+        return template_recipe(dish_name, ingredient_names, allergies, diets, low_sodium, lang, avoid)
     return Recipe(**out.model_dump(), source="llm")

@@ -85,7 +85,8 @@ export async function api<T>(path: string, init: RequestInit = {}, retry = true)
   const r = await fetch(`/api${path}`, {
     ...init,
     headers: {
-      "Content-Type": "application/json",
+      // FormData (upload ảnh): để trình duyệt tự đặt multipart boundary
+      ...(init.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
       "Accept-Language": lang,
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...init.headers,
@@ -110,5 +111,6 @@ export async function api<T>(path: string, init: RequestInit = {}, retry = true)
 
 export const post = <T>(path: string, data?: unknown) =>
   api<T>(path, { method: "POST", body: data === undefined ? undefined : JSON.stringify(data) });
+export const postForm = <T>(path: string, form: FormData) => api<T>(path, { method: "POST", body: form });
 export const put = <T>(path: string, data: unknown) => api<T>(path, { method: "PUT", body: JSON.stringify(data) });
 export const del = <T>(path: string) => api<T>(path, { method: "DELETE" });
