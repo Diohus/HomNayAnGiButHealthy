@@ -1,0 +1,3682 @@
+[
+ {
+  "code": "chicken_breast",
+  "name_vi": "Ức gà",
+  "name_en": "Chicken breast, skinless",
+  "display_en": "Chicken breast",
+  "category": "protein",
+  "tags": [
+   "animal",
+   "meat",
+   "poultry"
+  ],
+  "min_g": 50,
+  "max_g": 250,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "ức gà",
+   "gà",
+   "thịt gà",
+   "lườn gà",
+   "chicken",
+   "chicken breast",
+   "grilled chicken"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 171077,
+   "description": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/171077/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 120.0,
+   "protein_g": 22.5,
+   "fat_g": 2.62,
+   "carb_g": 0.0,
+   "fiber_g": 0.0,
+   "calcium_mg": 5.0,
+   "iron_mg": 0.37,
+   "phosphorus_mg": 213.0,
+   "potassium_mg": 334.0,
+   "sodium_mg": 45.0,
+   "zinc_mg": 0.68,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "chicken_thigh",
+  "name_vi": "Đùi gà (bỏ da)",
+  "name_en": "Chicken thigh, meat only",
+  "display_en": "Chicken thigh",
+  "category": "protein",
+  "tags": [
+   "animal",
+   "meat",
+   "poultry"
+  ],
+  "min_g": 50,
+  "max_g": 250,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "đùi gà",
+   "má đùi gà",
+   "chicken thigh",
+   "chicken thighs"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 173627,
+   "description": "Chicken, broilers or fryers, dark meat, thigh, meat only, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/173627/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 121.0,
+   "protein_g": 19.66,
+   "fat_g": 4.12,
+   "carb_g": 0.0,
+   "fiber_g": 0.0,
+   "calcium_mg": 7.0,
+   "iron_mg": 0.81,
+   "phosphorus_mg": 185.0,
+   "potassium_mg": 242.0,
+   "sodium_mg": 95.0,
+   "zinc_mg": 1.58,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "beef_lean",
+  "name_vi": "Thịt bò nạc xay (95% nạc)",
+  "name_en": "Ground beef 95% lean",
+  "display_en": "Lean ground beef",
+  "category": "protein",
+  "tags": [
+   "animal",
+   "meat",
+   "beef"
+  ],
+  "min_g": 50,
+  "max_g": 200,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "bò",
+   "thịt bò",
+   "bò băm",
+   "beef",
+   "ground beef",
+   "minced beef",
+   "steak"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 171790,
+   "description": "Beef, ground, 95% lean meat / 5% fat, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/171790/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 137.0,
+   "protein_g": 21.41,
+   "fat_g": 5.0,
+   "carb_g": 0.0,
+   "fiber_g": 0.0,
+   "calcium_mg": 9.0,
+   "iron_mg": 2.38,
+   "phosphorus_mg": 198.0,
+   "potassium_mg": 346.0,
+   "sodium_mg": 66.0,
+   "zinc_mg": 5.09,
+   "vitamin_d_ug": 0.1
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "pork_tenderloin",
+  "name_vi": "Thăn heo",
+  "name_en": "Pork tenderloin, lean",
+  "display_en": "Pork tenderloin",
+  "category": "protein",
+  "tags": [
+   "animal",
+   "meat",
+   "pork"
+  ],
+  "min_g": 50,
+  "max_g": 200,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "heo",
+   "lợn",
+   "thịt heo",
+   "thịt lợn",
+   "thăn heo",
+   "thăn lợn",
+   "pork",
+   "pork loin",
+   "pork tenderloin"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 168249,
+   "description": "Pork, fresh, loin, tenderloin, separable lean only, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/168249/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 109.0,
+   "protein_g": 20.95,
+   "fat_g": 2.17,
+   "carb_g": 0.0,
+   "fiber_g": 0.0,
+   "calcium_mg": 5.0,
+   "iron_mg": 0.98,
+   "phosphorus_mg": 247.0,
+   "potassium_mg": 399.0,
+   "sodium_mg": 53.0,
+   "zinc_mg": 1.89,
+   "vitamin_d_ug": 0.2
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "salmon",
+  "name_vi": "Cá hồi",
+  "name_en": "Atlantic salmon, farmed",
+  "display_en": "Salmon",
+  "category": "protein",
+  "tags": [
+   "animal",
+   "fish",
+   "allergen:fish"
+  ],
+  "min_g": 50,
+  "max_g": 200,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "cá hồi",
+   "salmon"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 175167,
+   "description": "Fish, salmon, Atlantic, farmed, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/175167/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 208.0,
+   "protein_g": 20.42,
+   "fat_g": 13.42,
+   "carb_g": 0.0,
+   "fiber_g": 0.0,
+   "calcium_mg": 9.0,
+   "iron_mg": 0.34,
+   "phosphorus_mg": 240.0,
+   "potassium_mg": 363.0,
+   "sodium_mg": 59.0,
+   "zinc_mg": 0.36,
+   "vitamin_d_ug": 11.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "tuna",
+  "name_vi": "Cá ngừ tươi",
+  "name_en": "Yellowfin tuna",
+  "display_en": "Tuna",
+  "category": "protein",
+  "tags": [
+   "animal",
+   "fish",
+   "allergen:fish"
+  ],
+  "min_g": 50,
+  "max_g": 200,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "cá ngừ",
+   "tuna"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 175159,
+   "description": "Fish, tuna, fresh, yellowfin, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/175159/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 109.0,
+   "protein_g": 24.4,
+   "fat_g": 0.49,
+   "carb_g": 0.0,
+   "fiber_g": 0.0,
+   "calcium_mg": 4.0,
+   "iron_mg": 0.77,
+   "phosphorus_mg": 278.0,
+   "potassium_mg": 441.0,
+   "sodium_mg": 45.0,
+   "zinc_mg": 0.37,
+   "vitamin_d_ug": 1.7
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "catfish",
+  "name_vi": "Cá da trơn (cá tra/basa)",
+  "name_en": "Channel catfish, farmed",
+  "display_en": "Catfish (basa)",
+  "category": "protein",
+  "tags": [
+   "animal",
+   "fish",
+   "allergen:fish"
+  ],
+  "min_g": 50,
+  "max_g": 250,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "cá tra",
+   "cá basa",
+   "cá ba sa",
+   "cá da trơn",
+   "cá kho",
+   "fish",
+   "catfish",
+   "basa",
+   "pangasius"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 175165,
+   "description": "Fish, catfish, channel, farmed, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/175165/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 119.0,
+   "protein_g": 15.23,
+   "fat_g": 5.94,
+   "carb_g": 0.0,
+   "fiber_g": 0.0,
+   "calcium_mg": 8.0,
+   "iron_mg": 0.23,
+   "phosphorus_mg": 204.0,
+   "potassium_mg": 302.0,
+   "sodium_mg": 98.0,
+   "zinc_mg": 0.48,
+   "vitamin_d_ug": 0.2
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "tilapia",
+  "name_vi": "Cá rô phi",
+  "name_en": "Tilapia",
+  "display_en": "Tilapia",
+  "category": "protein",
+  "tags": [
+   "animal",
+   "fish",
+   "allergen:fish"
+  ],
+  "min_g": 50,
+  "max_g": 250,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "cá rô phi",
+   "cá diêu hồng",
+   "tilapia"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 175176,
+   "description": "Fish, tilapia, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/175176/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 96.0,
+   "protein_g": 20.08,
+   "fat_g": 1.7,
+   "carb_g": 0.0,
+   "fiber_g": 0.0,
+   "calcium_mg": 10.0,
+   "iron_mg": 0.56,
+   "phosphorus_mg": 170.0,
+   "potassium_mg": 302.0,
+   "sodium_mg": 52.0,
+   "zinc_mg": 0.33,
+   "vitamin_d_ug": 3.1
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "mackerel",
+  "name_vi": "Cá thu",
+  "name_en": "Spanish mackerel",
+  "display_en": "Mackerel",
+  "category": "protein",
+  "tags": [
+   "animal",
+   "fish",
+   "allergen:fish"
+  ],
+  "min_g": 50,
+  "max_g": 200,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "cá thu",
+   "mackerel"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 173673,
+   "description": "Fish, mackerel, spanish, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/173673/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 139.0,
+   "protein_g": 19.29,
+   "fat_g": 6.3,
+   "carb_g": 0.0,
+   "fiber_g": 0.0,
+   "calcium_mg": 11.0,
+   "iron_mg": 0.44,
+   "phosphorus_mg": 205.0,
+   "potassium_mg": 446.0,
+   "sodium_mg": 59.0,
+   "zinc_mg": 0.49,
+   "vitamin_d_ug": 7.3
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "shrimp",
+  "name_vi": "Tôm",
+  "name_en": "Shrimp",
+  "display_en": "Shrimp",
+  "category": "protein",
+  "tags": [
+   "animal",
+   "shellfish",
+   "allergen:shellfish"
+  ],
+  "min_g": 50,
+  "max_g": 200,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "tôm",
+   "shrimp",
+   "shrimps",
+   "prawn",
+   "prawns"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 175179,
+   "description": "Crustaceans, shrimp, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/175179/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 85.0,
+   "protein_g": 20.1,
+   "fat_g": 0.51,
+   "carb_g": 0.0,
+   "fiber_g": null,
+   "calcium_mg": 64.0,
+   "iron_mg": 0.52,
+   "phosphorus_mg": 214.0,
+   "potassium_mg": 264.0,
+   "sodium_mg": 119.0,
+   "zinc_mg": 1.34,
+   "vitamin_d_ug": null
+  },
+  "unverified_nutrients": [
+   "fiber_g",
+   "vitamin_d_ug"
+  ]
+ },
+ {
+  "code": "squid",
+  "name_vi": "Mực",
+  "name_en": "Squid",
+  "display_en": "Squid",
+  "category": "protein",
+  "tags": [
+   "animal",
+   "shellfish",
+   "allergen:shellfish"
+  ],
+  "min_g": 50,
+  "max_g": 200,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "mực",
+   "squid",
+   "calamari"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 174223,
+   "description": "Mollusks, squid, mixed species, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/174223/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 92.0,
+   "protein_g": 15.58,
+   "fat_g": 1.38,
+   "carb_g": 3.08,
+   "fiber_g": 0.0,
+   "calcium_mg": 32.0,
+   "iron_mg": 0.68,
+   "phosphorus_mg": 221.0,
+   "potassium_mg": 246.0,
+   "sodium_mg": 44.0,
+   "zinc_mg": 1.53,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "egg",
+  "name_vi": "Trứng gà",
+  "name_en": "Whole egg",
+  "display_en": "Eggs",
+  "category": "protein",
+  "tags": [
+   "animal",
+   "egg",
+   "allergen:egg"
+  ],
+  "min_g": 50,
+  "max_g": 150,
+  "step_g": 50,
+  "slots": "BLD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "trứng",
+   "trứng gà",
+   "egg",
+   "eggs"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 171287,
+   "description": "Egg, whole, raw, fresh",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/171287/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 143.0,
+   "protein_g": 12.56,
+   "fat_g": 9.51,
+   "carb_g": 0.72,
+   "fiber_g": 0.0,
+   "calcium_mg": 56.0,
+   "iron_mg": 1.75,
+   "phosphorus_mg": 198.0,
+   "potassium_mg": 138.0,
+   "sodium_mg": 142.0,
+   "zinc_mg": 1.29,
+   "vitamin_d_ug": 2.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "tofu",
+  "name_vi": "Đậu hũ",
+  "name_en": "Firm tofu",
+  "display_en": "Tofu",
+  "category": "protein",
+  "tags": [
+   "allergen:soy"
+  ],
+  "min_g": 50,
+  "max_g": 300,
+  "step_g": 10,
+  "slots": "BLD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "đậu hũ",
+   "đậu phụ",
+   "tàu hũ",
+   "tofu",
+   "bean curd"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 172475,
+   "description": "Tofu, raw, firm, prepared with calcium sulfate",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/172475/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 144.0,
+   "protein_g": 17.27,
+   "fat_g": 8.72,
+   "carb_g": 2.78,
+   "fiber_g": 2.3,
+   "calcium_mg": 683.0,
+   "iron_mg": 2.66,
+   "phosphorus_mg": 190.0,
+   "potassium_mg": 237.0,
+   "sodium_mg": 14.0,
+   "zinc_mg": 1.57,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "lentils",
+  "name_vi": "Đậu lăng",
+  "name_en": "Lentils, raw",
+  "display_en": "Lentils",
+  "category": "protein",
+  "tags": [],
+  "min_g": 30,
+  "max_g": 100,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": 32,
+  "gi_source": "Atkinson et al., Diabetes Care 2008;31:2281-3",
+  "gi_verified": false,
+  "aliases": [
+   "đậu lăng",
+   "lentil",
+   "lentils"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 172420,
+   "description": "Lentils, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/172420/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 352.0,
+   "protein_g": 24.63,
+   "fat_g": 1.06,
+   "carb_g": 63.35,
+   "fiber_g": 10.7,
+   "calcium_mg": 35.0,
+   "iron_mg": 6.51,
+   "phosphorus_mg": 281.0,
+   "potassium_mg": 677.0,
+   "sodium_mg": 6.0,
+   "zinc_mg": 3.27,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "mung_beans",
+  "name_vi": "Đậu xanh",
+  "name_en": "Mung beans, raw",
+  "display_en": "Mung beans",
+  "category": "protein",
+  "tags": [],
+  "min_g": 30,
+  "max_g": 100,
+  "step_g": 10,
+  "slots": "BLD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "đậu xanh"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 174256,
+   "description": "Mung beans, mature seeds, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/174256/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 347.0,
+   "protein_g": 23.86,
+   "fat_g": 1.15,
+   "carb_g": 62.62,
+   "fiber_g": 16.3,
+   "calcium_mg": 132.0,
+   "iron_mg": 6.74,
+   "phosphorus_mg": 367.0,
+   "potassium_mg": 1246.0,
+   "sodium_mg": 15.0,
+   "zinc_mg": 2.68,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "black_beans",
+  "name_vi": "Đậu đen",
+  "name_en": "Black beans, raw",
+  "display_en": "Black beans",
+  "category": "protein",
+  "tags": [],
+  "min_g": 30,
+  "max_g": 100,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "đậu đen"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 173734,
+   "description": "Beans, black, mature seeds, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/173734/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 341.0,
+   "protein_g": 21.6,
+   "fat_g": 1.42,
+   "carb_g": 62.36,
+   "fiber_g": 15.5,
+   "calcium_mg": 123.0,
+   "iron_mg": 5.02,
+   "phosphorus_mg": 352.0,
+   "potassium_mg": 1483.0,
+   "sodium_mg": 5.0,
+   "zinc_mg": 3.65,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "white_rice",
+  "name_vi": "Gạo trắng",
+  "name_en": "White rice, raw, unenriched",
+  "display_en": "White rice",
+  "category": "carb",
+  "tags": [],
+  "min_g": 40,
+  "max_g": 150,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": 73,
+  "gi_source": "Atkinson et al., Diabetes Care 2008;31:2281-3",
+  "gi_verified": false,
+  "aliases": [
+   "cơm",
+   "cơm trắng",
+   "gạo",
+   "rice",
+   "white rice",
+   "steamed rice"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 169756,
+   "description": "Rice, white, long-grain, regular, raw, unenriched",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/169756/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 365.0,
+   "protein_g": 7.13,
+   "fat_g": 0.66,
+   "carb_g": 79.95,
+   "fiber_g": 1.3,
+   "calcium_mg": 28.0,
+   "iron_mg": 0.8,
+   "phosphorus_mg": 115.0,
+   "potassium_mg": 115.0,
+   "sodium_mg": 5.0,
+   "zinc_mg": 1.09,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "brown_rice",
+  "name_vi": "Gạo lứt",
+  "name_en": "Brown rice, raw",
+  "display_en": "Brown rice",
+  "category": "carb",
+  "tags": [],
+  "min_g": 40,
+  "max_g": 150,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": 68,
+  "gi_source": "Atkinson et al., Diabetes Care 2008;31:2281-3",
+  "gi_verified": false,
+  "aliases": [
+   "gạo lứt",
+   "cơm gạo lứt",
+   "brown rice"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 169703,
+   "description": "Rice, brown, long-grain, raw (Includes foods for USDA's Food Distribution Program)",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/169703/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 367.0,
+   "protein_g": 7.54,
+   "fat_g": 3.2,
+   "carb_g": 76.25,
+   "fiber_g": 3.6,
+   "calcium_mg": 9.0,
+   "iron_mg": 1.29,
+   "phosphorus_mg": 311.0,
+   "potassium_mg": 250.0,
+   "sodium_mg": 5.0,
+   "zinc_mg": 2.13,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "rice_noodles",
+  "name_vi": "Bún/phở khô",
+  "name_en": "Rice noodles, dry",
+  "display_en": "Rice noodles",
+  "category": "carb",
+  "tags": [],
+  "min_g": 40,
+  "max_g": 150,
+  "step_g": 10,
+  "slots": "BLD",
+  "gi": 53,
+  "gi_source": "Atkinson et al., Diabetes Care 2008;31:2281-3",
+  "gi_verified": false,
+  "aliases": [
+   "bún",
+   "phở",
+   "hủ tiếu",
+   "noodles",
+   "rice noodles",
+   "pho",
+   "vermicelli"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 169742,
+   "description": "Rice noodles, dry",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/169742/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 364.0,
+   "protein_g": 5.95,
+   "fat_g": 0.56,
+   "carb_g": 80.18,
+   "fiber_g": 1.6,
+   "calcium_mg": 18.0,
+   "iron_mg": 0.7,
+   "phosphorus_mg": 153.0,
+   "potassium_mg": 30.0,
+   "sodium_mg": 182.0,
+   "zinc_mg": 0.74,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "glass_noodles",
+  "name_vi": "Miến",
+  "name_en": "Cellophane noodles (mung bean)",
+  "display_en": "Glass noodles",
+  "category": "carb",
+  "tags": [],
+  "min_g": 30,
+  "max_g": 100,
+  "step_g": 10,
+  "slots": "BLD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "miến",
+   "glass noodles"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 174258,
+   "description": "Noodles, chinese, cellophane or long rice (mung beans), dehydrated",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/174258/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 351.0,
+   "protein_g": 0.16,
+   "fat_g": 0.06,
+   "carb_g": 86.09,
+   "fiber_g": 0.5,
+   "calcium_mg": 25.0,
+   "iron_mg": 2.17,
+   "phosphorus_mg": 32.0,
+   "potassium_mg": 10.0,
+   "sodium_mg": 10.0,
+   "zinc_mg": 0.41,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "wholewheat_bread",
+  "name_vi": "Bánh mì nguyên cám",
+  "name_en": "Whole-wheat bread",
+  "display_en": "Whole-wheat bread",
+  "category": "carb",
+  "tags": [
+   "gluten",
+   "allergen:gluten",
+   "allergen:wheat"
+  ],
+  "min_g": 30,
+  "max_g": 150,
+  "step_g": 10,
+  "slots": "B",
+  "gi": 74,
+  "gi_source": "Atkinson et al., Diabetes Care 2008;31:2281-3",
+  "gi_verified": false,
+  "aliases": [
+   "bánh mì nguyên cám"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 172688,
+   "description": "Bread, whole-wheat, commercially prepared",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/172688/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 252.0,
+   "protein_g": 12.45,
+   "fat_g": 3.5,
+   "carb_g": 42.71,
+   "fiber_g": 6.0,
+   "calcium_mg": 161.0,
+   "iron_mg": 2.47,
+   "phosphorus_mg": 212.0,
+   "potassium_mg": 254.0,
+   "sodium_mg": 455.0,
+   "zinc_mg": 1.77,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "baguette",
+  "name_vi": "Bánh mì",
+  "name_en": "French bread",
+  "display_en": "Baguette",
+  "category": "carb",
+  "tags": [
+   "gluten",
+   "allergen:gluten",
+   "allergen:wheat"
+  ],
+  "min_g": 40,
+  "max_g": 150,
+  "step_g": 10,
+  "slots": "B",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "bánh mì",
+   "bread",
+   "baguette",
+   "banh mi"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 172675,
+   "description": "Bread, french or vienna (includes sourdough)",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/172675/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 272.0,
+   "protein_g": 10.75,
+   "fat_g": 2.42,
+   "carb_g": 51.88,
+   "fiber_g": 2.2,
+   "calcium_mg": 52.0,
+   "iron_mg": 3.91,
+   "phosphorus_mg": 105.0,
+   "potassium_mg": 117.0,
+   "sodium_mg": 602.0,
+   "zinc_mg": 1.04,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "oats",
+  "name_vi": "Yến mạch",
+  "name_en": "Oats, dry",
+  "display_en": "Oats",
+  "category": "carb",
+  "tags": [],
+  "min_g": 30,
+  "max_g": 100,
+  "step_g": 10,
+  "slots": "B",
+  "gi": 55,
+  "gi_source": "Atkinson et al., Diabetes Care 2008;31:2281-3",
+  "gi_verified": false,
+  "aliases": [
+   "yến mạch",
+   "oats",
+   "oatmeal",
+   "porridge"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 173904,
+   "description": "Cereals, oats, regular and quick, not fortified, dry",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/173904/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 379.0,
+   "protein_g": 13.15,
+   "fat_g": 6.52,
+   "carb_g": 67.7,
+   "fiber_g": 10.1,
+   "calcium_mg": 52.0,
+   "iron_mg": 4.25,
+   "phosphorus_mg": 410.0,
+   "potassium_mg": 362.0,
+   "sodium_mg": 6.0,
+   "zinc_mg": 3.64,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "sweet_potato",
+  "name_vi": "Khoai lang",
+  "name_en": "Sweet potato, raw",
+  "display_en": "Sweet potato",
+  "category": "carb",
+  "tags": [],
+  "min_g": 80,
+  "max_g": 350,
+  "step_g": 10,
+  "slots": "BLD",
+  "gi": 63,
+  "gi_source": "Atkinson et al., Diabetes Care 2008;31:2281-3",
+  "gi_verified": false,
+  "aliases": [
+   "khoai lang",
+   "sweet potato",
+   "sweet potatoes"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 168482,
+   "description": "Sweet potato, raw, unprepared (Includes foods for USDA's Food Distribution Program)",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/168482/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 86.0,
+   "protein_g": 1.57,
+   "fat_g": 0.05,
+   "carb_g": 20.12,
+   "fiber_g": 3.0,
+   "calcium_mg": 30.0,
+   "iron_mg": 0.61,
+   "phosphorus_mg": 47.0,
+   "potassium_mg": 337.0,
+   "sodium_mg": 55.0,
+   "zinc_mg": 0.3,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "potato",
+  "name_vi": "Khoai tây",
+  "name_en": "Potato, raw",
+  "display_en": "Potato",
+  "category": "carb",
+  "tags": [],
+  "min_g": 80,
+  "max_g": 350,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": 78,
+  "gi_source": "Atkinson et al., Diabetes Care 2008;31:2281-3",
+  "gi_verified": false,
+  "aliases": [
+   "khoai tây",
+   "potato",
+   "potatoes"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 170026,
+   "description": "Potatoes, flesh and skin, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/170026/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 77.0,
+   "protein_g": 2.05,
+   "fat_g": 0.09,
+   "carb_g": 17.49,
+   "fiber_g": 2.1,
+   "calcium_mg": 12.0,
+   "iron_mg": 0.81,
+   "phosphorus_mg": 57.0,
+   "potassium_mg": 425.0,
+   "sodium_mg": 6.0,
+   "zinc_mg": 0.3,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "corn",
+  "name_vi": "Bắp ngọt",
+  "name_en": "Sweet corn, raw",
+  "display_en": "Sweet corn",
+  "category": "carb",
+  "tags": [],
+  "min_g": 80,
+  "max_g": 300,
+  "step_g": 10,
+  "slots": "BLD",
+  "gi": 52,
+  "gi_source": "Atkinson et al., Diabetes Care 2008;31:2281-3",
+  "gi_verified": false,
+  "aliases": [
+   "bắp",
+   "ngô",
+   "corn"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 169998,
+   "description": "Corn, sweet, yellow, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/169998/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 86.0,
+   "protein_g": 3.27,
+   "fat_g": 1.35,
+   "carb_g": 18.7,
+   "fiber_g": 2.0,
+   "calcium_mg": 2.0,
+   "iron_mg": 0.52,
+   "phosphorus_mg": 89.0,
+   "potassium_mg": 270.0,
+   "sodium_mg": 15.0,
+   "zinc_mg": 0.46,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "taro",
+  "name_vi": "Khoai môn",
+  "name_en": "Taro, raw",
+  "display_en": "Taro",
+  "category": "carb",
+  "tags": [],
+  "min_g": 80,
+  "max_g": 300,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": 53,
+  "gi_source": "Atkinson et al., Diabetes Care 2008;31:2281-3",
+  "gi_verified": false,
+  "aliases": [
+   "khoai môn"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 169308,
+   "description": "Taro, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/169308/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 112.0,
+   "protein_g": 1.5,
+   "fat_g": 0.2,
+   "carb_g": 26.46,
+   "fiber_g": 4.1,
+   "calcium_mg": 43.0,
+   "iron_mg": 0.55,
+   "phosphorus_mg": 84.0,
+   "potassium_mg": 591.0,
+   "sodium_mg": 11.0,
+   "zinc_mg": 0.23,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "bok_choy",
+  "name_vi": "Cải thìa",
+  "name_en": "Pak-choi",
+  "display_en": "Bok choy",
+  "category": "vegetable",
+  "tags": [],
+  "min_g": 50,
+  "max_g": 250,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "cải thìa"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 170390,
+   "description": "Cabbage, chinese (pak-choi), raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/170390/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 13.0,
+   "protein_g": 1.5,
+   "fat_g": 0.2,
+   "carb_g": 2.18,
+   "fiber_g": 1.0,
+   "calcium_mg": 105.0,
+   "iron_mg": 0.8,
+   "phosphorus_mg": 37.0,
+   "potassium_mg": 252.0,
+   "sodium_mg": 65.0,
+   "zinc_mg": 0.19,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "mustard_greens",
+  "name_vi": "Cải xanh",
+  "name_en": "Mustard greens",
+  "display_en": "Mustard greens",
+  "category": "vegetable",
+  "tags": [],
+  "min_g": 50,
+  "max_g": 250,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "cải xanh"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 169256,
+   "description": "Mustard greens, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/169256/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 27.0,
+   "protein_g": 2.86,
+   "fat_g": 0.42,
+   "carb_g": 4.67,
+   "fiber_g": 3.2,
+   "calcium_mg": 115.0,
+   "iron_mg": 1.64,
+   "phosphorus_mg": 58.0,
+   "potassium_mg": 384.0,
+   "sodium_mg": 20.0,
+   "zinc_mg": 0.25,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "napa_cabbage",
+  "name_vi": "Cải thảo",
+  "name_en": "Napa cabbage (pe-tsai)",
+  "display_en": "Napa cabbage",
+  "category": "vegetable",
+  "tags": [],
+  "min_g": 50,
+  "max_g": 250,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 169979,
+   "description": "Cabbage, chinese (pe-tsai), raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/169979/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 16.0,
+   "protein_g": 1.2,
+   "fat_g": 0.2,
+   "carb_g": 3.23,
+   "fiber_g": 1.2,
+   "calcium_mg": 77.0,
+   "iron_mg": 0.31,
+   "phosphorus_mg": 29.0,
+   "potassium_mg": 238.0,
+   "sodium_mg": 9.0,
+   "zinc_mg": 0.23,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "sweet_potato_leaves",
+  "name_vi": "Rau lang",
+  "name_en": "Sweet potato leaves",
+  "display_en": "Sweet potato leaves",
+  "category": "vegetable",
+  "tags": [],
+  "min_g": 50,
+  "max_g": 250,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 169303,
+   "description": "Sweet potato leaves, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/169303/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 42.0,
+   "protein_g": 2.49,
+   "fat_g": 0.51,
+   "carb_g": 8.82,
+   "fiber_g": 5.3,
+   "calcium_mg": 78.0,
+   "iron_mg": 0.97,
+   "phosphorus_mg": 81.0,
+   "potassium_mg": 508.0,
+   "sodium_mg": 6.0,
+   "zinc_mg": null,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": [
+   "zinc_mg"
+  ]
+ },
+ {
+  "code": "spinach",
+  "name_vi": "Cải bó xôi",
+  "name_en": "Spinach",
+  "display_en": "Spinach",
+  "category": "vegetable",
+  "tags": [],
+  "min_g": 50,
+  "max_g": 250,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "cải bó xôi",
+   "rau bina",
+   "spinach"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 168462,
+   "description": "Spinach, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/168462/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 23.0,
+   "protein_g": 2.86,
+   "fat_g": 0.39,
+   "carb_g": 3.63,
+   "fiber_g": 2.2,
+   "calcium_mg": 99.0,
+   "iron_mg": 2.71,
+   "phosphorus_mg": 49.0,
+   "potassium_mg": 558.0,
+   "sodium_mg": 79.0,
+   "zinc_mg": 0.53,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "broccoli",
+  "name_vi": "Bông cải xanh",
+  "name_en": "Broccoli",
+  "display_en": "Broccoli",
+  "category": "vegetable",
+  "tags": [],
+  "min_g": 50,
+  "max_g": 250,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "bông cải",
+   "súp lơ",
+   "broccoli"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 170379,
+   "description": "Broccoli, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/170379/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 34.0,
+   "protein_g": 2.82,
+   "fat_g": 0.37,
+   "carb_g": 6.64,
+   "fiber_g": 2.6,
+   "calcium_mg": 47.0,
+   "iron_mg": 0.73,
+   "phosphorus_mg": 66.0,
+   "potassium_mg": 316.0,
+   "sodium_mg": 33.0,
+   "zinc_mg": 0.41,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "cabbage",
+  "name_vi": "Bắp cải",
+  "name_en": "Cabbage",
+  "display_en": "Cabbage",
+  "category": "vegetable",
+  "tags": [],
+  "min_g": 50,
+  "max_g": 250,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "bắp cải"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 169975,
+   "description": "Cabbage, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/169975/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 25.0,
+   "protein_g": 1.28,
+   "fat_g": 0.1,
+   "carb_g": 5.8,
+   "fiber_g": 2.5,
+   "calcium_mg": 40.0,
+   "iron_mg": 0.47,
+   "phosphorus_mg": 26.0,
+   "potassium_mg": 170.0,
+   "sodium_mg": 18.0,
+   "zinc_mg": 0.18,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "carrot",
+  "name_vi": "Cà rốt",
+  "name_en": "Carrot",
+  "display_en": "Carrot",
+  "category": "vegetable",
+  "tags": [],
+  "min_g": 30,
+  "max_g": 200,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": 39,
+  "gi_source": "Atkinson et al., Diabetes Care 2008;31:2281-3",
+  "gi_verified": false,
+  "aliases": [
+   "cà rốt",
+   "carrot",
+   "carrots"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 170393,
+   "description": "Carrots, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/170393/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 41.0,
+   "protein_g": 0.93,
+   "fat_g": 0.24,
+   "carb_g": 9.58,
+   "fiber_g": 2.8,
+   "calcium_mg": 33.0,
+   "iron_mg": 0.3,
+   "phosphorus_mg": 35.0,
+   "potassium_mg": 320.0,
+   "sodium_mg": 69.0,
+   "zinc_mg": 0.24,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "tomato",
+  "name_vi": "Cà chua",
+  "name_en": "Tomato",
+  "display_en": "Tomato",
+  "category": "vegetable",
+  "tags": [],
+  "min_g": 30,
+  "max_g": 200,
+  "step_g": 10,
+  "slots": "BLD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "cà chua",
+   "tomato",
+   "tomatoes"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 170457,
+   "description": "Tomatoes, red, ripe, raw, year round average",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/170457/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 18.0,
+   "protein_g": 0.88,
+   "fat_g": 0.2,
+   "carb_g": 3.89,
+   "fiber_g": 1.2,
+   "calcium_mg": 10.0,
+   "iron_mg": 0.27,
+   "phosphorus_mg": 24.0,
+   "potassium_mg": 237.0,
+   "sodium_mg": 5.0,
+   "zinc_mg": 0.17,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "cucumber",
+  "name_vi": "Dưa leo",
+  "name_en": "Cucumber",
+  "display_en": "Cucumber",
+  "category": "vegetable",
+  "tags": [],
+  "min_g": 50,
+  "max_g": 250,
+  "step_g": 10,
+  "slots": "BLD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "dưa leo",
+   "dưa chuột"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 168409,
+   "description": "Cucumber, with peel, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/168409/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 15.0,
+   "protein_g": 0.65,
+   "fat_g": 0.11,
+   "carb_g": 3.63,
+   "fiber_g": 0.5,
+   "calcium_mg": 16.0,
+   "iron_mg": 0.28,
+   "phosphorus_mg": 24.0,
+   "potassium_mg": 147.0,
+   "sodium_mg": 2.0,
+   "zinc_mg": 0.2,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "green_beans",
+  "name_vi": "Đậu que",
+  "name_en": "Green beans",
+  "display_en": "Green beans",
+  "category": "vegetable",
+  "tags": [],
+  "min_g": 50,
+  "max_g": 250,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 169961,
+   "description": "Beans, snap, green, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/169961/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 31.0,
+   "protein_g": 1.83,
+   "fat_g": 0.22,
+   "carb_g": 6.97,
+   "fiber_g": 2.7,
+   "calcium_mg": 37.0,
+   "iron_mg": 1.03,
+   "phosphorus_mg": 38.0,
+   "potassium_mg": 211.0,
+   "sodium_mg": 6.0,
+   "zinc_mg": 0.24,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "pumpkin",
+  "name_vi": "Bí đỏ",
+  "name_en": "Pumpkin",
+  "display_en": "Pumpkin",
+  "category": "vegetable",
+  "tags": [],
+  "min_g": 50,
+  "max_g": 250,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": 64,
+  "gi_source": "Atkinson et al., Diabetes Care 2008;31:2281-3",
+  "gi_verified": false,
+  "aliases": [
+   "bí đỏ"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 168448,
+   "description": "Pumpkin, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/168448/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 26.0,
+   "protein_g": 1.0,
+   "fat_g": 0.1,
+   "carb_g": 6.5,
+   "fiber_g": 0.5,
+   "calcium_mg": 21.0,
+   "iron_mg": 0.8,
+   "phosphorus_mg": 44.0,
+   "potassium_mg": 340.0,
+   "sodium_mg": 1.0,
+   "zinc_mg": 0.32,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "bitter_melon",
+  "name_vi": "Khổ qua",
+  "name_en": "Bitter gourd",
+  "display_en": "Bitter melon",
+  "category": "vegetable",
+  "tags": [],
+  "min_g": 50,
+  "max_g": 200,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "khổ qua",
+   "mướp đắng"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 168393,
+   "description": "Balsam-pear (bitter gourd), pods, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/168393/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 17.0,
+   "protein_g": 1.0,
+   "fat_g": 0.17,
+   "carb_g": 3.7,
+   "fiber_g": 2.8,
+   "calcium_mg": 19.0,
+   "iron_mg": 0.43,
+   "phosphorus_mg": 31.0,
+   "potassium_mg": 296.0,
+   "sodium_mg": 5.0,
+   "zinc_mg": 0.8,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "eggplant",
+  "name_vi": "Cà tím",
+  "name_en": "Eggplant",
+  "display_en": "Eggplant",
+  "category": "vegetable",
+  "tags": [],
+  "min_g": 50,
+  "max_g": 250,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "cà tím"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 169228,
+   "description": "Eggplant, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/169228/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 25.0,
+   "protein_g": 0.98,
+   "fat_g": 0.18,
+   "carb_g": 5.88,
+   "fiber_g": 3.0,
+   "calcium_mg": 9.0,
+   "iron_mg": 0.23,
+   "phosphorus_mg": 24.0,
+   "potassium_mg": 229.0,
+   "sodium_mg": 2.0,
+   "zinc_mg": 0.16,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "bean_sprouts",
+  "name_vi": "Giá đỗ",
+  "name_en": "Mung bean sprouts",
+  "display_en": "Bean sprouts",
+  "category": "vegetable",
+  "tags": [],
+  "min_g": 30,
+  "max_g": 200,
+  "step_g": 10,
+  "slots": "BLD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 169957,
+   "description": "Mung beans, mature seeds, sprouted, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/169957/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 30.0,
+   "protein_g": 3.04,
+   "fat_g": 0.18,
+   "carb_g": 5.94,
+   "fiber_g": 1.8,
+   "calcium_mg": 13.0,
+   "iron_mg": 0.91,
+   "phosphorus_mg": 54.0,
+   "potassium_mg": 149.0,
+   "sodium_mg": 6.0,
+   "zinc_mg": 0.41,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "mushroom",
+  "name_vi": "Nấm mỡ",
+  "name_en": "White mushrooms",
+  "display_en": "Mushrooms",
+  "category": "vegetable",
+  "tags": [],
+  "min_g": 50,
+  "max_g": 200,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "nấm",
+   "mushroom",
+   "mushrooms"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 169251,
+   "description": "Mushrooms, white, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/169251/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 22.0,
+   "protein_g": 3.09,
+   "fat_g": 0.34,
+   "carb_g": 3.26,
+   "fiber_g": 1.0,
+   "calcium_mg": 3.0,
+   "iron_mg": 0.5,
+   "phosphorus_mg": 86.0,
+   "potassium_mg": 318.0,
+   "sodium_mg": 5.0,
+   "zinc_mg": 0.52,
+   "vitamin_d_ug": 0.2
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "okra",
+  "name_vi": "Đậu bắp",
+  "name_en": "Okra",
+  "display_en": "Okra",
+  "category": "vegetable",
+  "tags": [],
+  "min_g": 50,
+  "max_g": 200,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 169260,
+   "description": "Okra, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/169260/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 33.0,
+   "protein_g": 1.93,
+   "fat_g": 0.19,
+   "carb_g": 7.45,
+   "fiber_g": 3.2,
+   "calcium_mg": 82.0,
+   "iron_mg": 0.62,
+   "phosphorus_mg": 61.0,
+   "potassium_mg": 299.0,
+   "sodium_mg": 7.0,
+   "zinc_mg": 0.58,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "lettuce",
+  "name_vi": "Xà lách",
+  "name_en": "Green leaf lettuce",
+  "display_en": "Lettuce",
+  "category": "vegetable",
+  "tags": [],
+  "min_g": 30,
+  "max_g": 150,
+  "step_g": 10,
+  "slots": "BLD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 169249,
+   "description": "Lettuce, green leaf, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/169249/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 15.0,
+   "protein_g": 1.36,
+   "fat_g": 0.15,
+   "carb_g": 2.87,
+   "fiber_g": 1.3,
+   "calcium_mg": 36.0,
+   "iron_mg": 0.86,
+   "phosphorus_mg": 29.0,
+   "potassium_mg": 194.0,
+   "sodium_mg": 28.0,
+   "zinc_mg": 0.18,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "chayote",
+  "name_vi": "Su su",
+  "name_en": "Chayote",
+  "display_en": "Chayote",
+  "category": "vegetable",
+  "tags": [],
+  "min_g": 50,
+  "max_g": 250,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 170402,
+   "description": "Chayote, fruit, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/170402/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 19.0,
+   "protein_g": 0.82,
+   "fat_g": 0.13,
+   "carb_g": 4.51,
+   "fiber_g": 1.7,
+   "calcium_mg": 17.0,
+   "iron_mg": 0.34,
+   "phosphorus_mg": 18.0,
+   "potassium_mg": 125.0,
+   "sodium_mg": 2.0,
+   "zinc_mg": 0.74,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "winter_melon",
+  "name_vi": "Bí đao",
+  "name_en": "Waxgourd",
+  "display_en": "Winter melon",
+  "category": "vegetable",
+  "tags": [],
+  "min_g": 50,
+  "max_g": 250,
+  "step_g": 10,
+  "slots": "LD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "bí đao"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 170069,
+   "description": "Waxgourd, (chinese preserving melon), raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/170069/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 13.0,
+   "protein_g": 0.4,
+   "fat_g": 0.2,
+   "carb_g": 3.0,
+   "fiber_g": 2.9,
+   "calcium_mg": 19.0,
+   "iron_mg": 0.4,
+   "phosphorus_mg": 19.0,
+   "potassium_mg": 6.0,
+   "sodium_mg": 111.0,
+   "zinc_mg": 0.61,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "banana",
+  "name_vi": "Chuối",
+  "name_en": "Banana",
+  "display_en": "Banana",
+  "category": "fruit",
+  "tags": [],
+  "min_g": 50,
+  "max_g": 200,
+  "step_g": 10,
+  "slots": "BLD",
+  "gi": 51,
+  "gi_source": "Atkinson et al., Diabetes Care 2008;31:2281-3",
+  "gi_verified": false,
+  "aliases": [
+   "chuối",
+   "banana",
+   "bananas"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 173944,
+   "description": "Bananas, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/173944/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 89.0,
+   "protein_g": 1.09,
+   "fat_g": 0.33,
+   "carb_g": 22.84,
+   "fiber_g": 2.6,
+   "calcium_mg": 5.0,
+   "iron_mg": 0.26,
+   "phosphorus_mg": 22.0,
+   "potassium_mg": 358.0,
+   "sodium_mg": 1.0,
+   "zinc_mg": 0.15,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "orange",
+  "name_vi": "Cam",
+  "name_en": "Orange",
+  "display_en": "Orange",
+  "category": "fruit",
+  "tags": [],
+  "min_g": 80,
+  "max_g": 250,
+  "step_g": 10,
+  "slots": "BLD",
+  "gi": 43,
+  "gi_source": "Atkinson et al., Diabetes Care 2008;31:2281-3",
+  "gi_verified": false,
+  "aliases": [
+   "cam",
+   "orange",
+   "oranges"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 169097,
+   "description": "Oranges, raw, all commercial varieties",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/169097/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 47.0,
+   "protein_g": 0.94,
+   "fat_g": 0.12,
+   "carb_g": 11.75,
+   "fiber_g": 2.4,
+   "calcium_mg": 40.0,
+   "iron_mg": 0.1,
+   "phosphorus_mg": 14.0,
+   "potassium_mg": 181.0,
+   "sodium_mg": 0.0,
+   "zinc_mg": 0.07,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "apple",
+  "name_vi": "Táo",
+  "name_en": "Apple, with skin",
+  "display_en": "Apple",
+  "category": "fruit",
+  "tags": [],
+  "min_g": 80,
+  "max_g": 250,
+  "step_g": 10,
+  "slots": "BLD",
+  "gi": 36,
+  "gi_source": "Atkinson et al., Diabetes Care 2008;31:2281-3",
+  "gi_verified": false,
+  "aliases": [
+   "táo",
+   "apple",
+   "apples"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 171688,
+   "description": "Apples, raw, with skin (Includes foods for USDA's Food Distribution Program)",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/171688/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 52.0,
+   "protein_g": 0.26,
+   "fat_g": 0.17,
+   "carb_g": 13.81,
+   "fiber_g": 2.4,
+   "calcium_mg": 6.0,
+   "iron_mg": 0.12,
+   "phosphorus_mg": 11.0,
+   "potassium_mg": 107.0,
+   "sodium_mg": 1.0,
+   "zinc_mg": 0.04,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "papaya",
+  "name_vi": "Đu đủ",
+  "name_en": "Papaya",
+  "display_en": "Papaya",
+  "category": "fruit",
+  "tags": [],
+  "min_g": 80,
+  "max_g": 250,
+  "step_g": 10,
+  "slots": "BLD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "đu đủ"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 169926,
+   "description": "Papayas, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/169926/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 43.0,
+   "protein_g": 0.47,
+   "fat_g": 0.26,
+   "carb_g": 10.82,
+   "fiber_g": 1.7,
+   "calcium_mg": 20.0,
+   "iron_mg": 0.25,
+   "phosphorus_mg": 10.0,
+   "potassium_mg": 182.0,
+   "sodium_mg": 8.0,
+   "zinc_mg": 0.08,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "guava",
+  "name_vi": "Ổi",
+  "name_en": "Guava",
+  "display_en": "Guava",
+  "category": "fruit",
+  "tags": [],
+  "min_g": 80,
+  "max_g": 250,
+  "step_g": 10,
+  "slots": "BLD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "ổi"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 173044,
+   "description": "Guavas, common, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/173044/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 68.0,
+   "protein_g": 2.55,
+   "fat_g": 0.95,
+   "carb_g": 14.32,
+   "fiber_g": 5.4,
+   "calcium_mg": 18.0,
+   "iron_mg": 0.26,
+   "phosphorus_mg": 40.0,
+   "potassium_mg": 417.0,
+   "sodium_mg": 2.0,
+   "zinc_mg": 0.23,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "mango",
+  "name_vi": "Xoài",
+  "name_en": "Mango",
+  "display_en": "Mango",
+  "category": "fruit",
+  "tags": [],
+  "min_g": 80,
+  "max_g": 250,
+  "step_g": 10,
+  "slots": "BLD",
+  "gi": 51,
+  "gi_source": "Atkinson et al., Diabetes Care 2008;31:2281-3",
+  "gi_verified": false,
+  "aliases": [
+   "xoài",
+   "mango",
+   "mangoes"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 169910,
+   "description": "Mangos, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/169910/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 60.0,
+   "protein_g": 0.82,
+   "fat_g": 0.38,
+   "carb_g": 14.98,
+   "fiber_g": 1.6,
+   "calcium_mg": 11.0,
+   "iron_mg": 0.16,
+   "phosphorus_mg": 14.0,
+   "potassium_mg": 168.0,
+   "sodium_mg": 1.0,
+   "zinc_mg": 0.09,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "watermelon",
+  "name_vi": "Dưa hấu",
+  "name_en": "Watermelon",
+  "display_en": "Watermelon",
+  "category": "fruit",
+  "tags": [],
+  "min_g": 100,
+  "max_g": 300,
+  "step_g": 10,
+  "slots": "BLD",
+  "gi": 76,
+  "gi_source": "Atkinson et al., Diabetes Care 2008;31:2281-3",
+  "gi_verified": false,
+  "aliases": [
+   "dưa hấu",
+   "watermelon"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 167765,
+   "description": "Watermelon, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/167765/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 30.0,
+   "protein_g": 0.61,
+   "fat_g": 0.15,
+   "carb_g": 7.55,
+   "fiber_g": 0.4,
+   "calcium_mg": 7.0,
+   "iron_mg": 0.24,
+   "phosphorus_mg": 11.0,
+   "potassium_mg": 112.0,
+   "sodium_mg": 1.0,
+   "zinc_mg": 0.1,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "milk_lowfat",
+  "name_vi": "Sữa tươi ít béo",
+  "name_en": "Milk 1% fat",
+  "display_en": "Low-fat milk",
+  "category": "dairy",
+  "tags": [
+   "animal",
+   "dairy",
+   "allergen:milk"
+  ],
+  "min_g": 100,
+  "max_g": 300,
+  "step_g": 50,
+  "slots": "B",
+  "gi": 37,
+  "gi_source": "Atkinson et al., Diabetes Care 2008;31:2281-3",
+  "gi_verified": false,
+  "aliases": [
+   "sữa",
+   "sữa tươi",
+   "milk"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 170872,
+   "description": "Milk, lowfat, fluid, 1% milkfat, with added vitamin A and vitamin D",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/170872/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 42.0,
+   "protein_g": 3.37,
+   "fat_g": 0.97,
+   "carb_g": 4.99,
+   "fiber_g": 0.0,
+   "calcium_mg": 125.0,
+   "iron_mg": 0.03,
+   "phosphorus_mg": 95.0,
+   "potassium_mg": 150.0,
+   "sodium_mg": 44.0,
+   "zinc_mg": 0.42,
+   "vitamin_d_ug": 1.2
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "yogurt_lowfat",
+  "name_vi": "Sữa chua không đường ít béo",
+  "name_en": "Plain low-fat yogurt",
+  "display_en": "Plain low-fat yogurt",
+  "category": "dairy",
+  "tags": [
+   "animal",
+   "dairy",
+   "allergen:milk"
+  ],
+  "min_g": 100,
+  "max_g": 250,
+  "step_g": 50,
+  "slots": "B",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "sữa chua",
+   "yogurt",
+   "yoghurt"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 170886,
+   "description": "Yogurt, plain, low fat",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/170886/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 63.0,
+   "protein_g": 5.25,
+   "fat_g": 1.55,
+   "carb_g": 7.04,
+   "fiber_g": 0.0,
+   "calcium_mg": 183.0,
+   "iron_mg": 0.08,
+   "phosphorus_mg": 144.0,
+   "potassium_mg": 234.0,
+   "sodium_mg": 70.0,
+   "zinc_mg": 0.89,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "soymilk",
+  "name_vi": "Sữa đậu nành không đường",
+  "name_en": "Soymilk, unfortified",
+  "display_en": "Unsweetened soy milk",
+  "category": "dairy",
+  "tags": [
+   "allergen:soy"
+  ],
+  "min_g": 100,
+  "max_g": 300,
+  "step_g": 50,
+  "slots": "B",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "sữa đậu nành",
+   "soy milk",
+   "soymilk"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 172446,
+   "description": "Soymilk, original and vanilla, unfortified",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/172446/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 54.0,
+   "protein_g": 3.27,
+   "fat_g": 1.75,
+   "carb_g": 6.28,
+   "fiber_g": 0.6,
+   "calcium_mg": 25.0,
+   "iron_mg": 0.64,
+   "phosphorus_mg": 52.0,
+   "potassium_mg": 118.0,
+   "sodium_mg": 51.0,
+   "zinc_mg": 0.12,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "peanuts",
+  "name_vi": "Đậu phộng",
+  "name_en": "Peanuts, raw",
+  "display_en": "Peanuts",
+  "category": "nut",
+  "tags": [
+   "allergen:peanut"
+  ],
+  "min_g": 10,
+  "max_g": 40,
+  "step_g": 5,
+  "slots": "BLD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "đậu phộng",
+   "lạc",
+   "peanut",
+   "peanuts"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 172430,
+   "description": "Peanuts, all types, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/172430/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 567.0,
+   "protein_g": 25.8,
+   "fat_g": 49.24,
+   "carb_g": 16.13,
+   "fiber_g": 8.5,
+   "calcium_mg": 92.0,
+   "iron_mg": 4.58,
+   "phosphorus_mg": 376.0,
+   "potassium_mg": 705.0,
+   "sodium_mg": 18.0,
+   "zinc_mg": 3.27,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "cashews",
+  "name_vi": "Hạt điều",
+  "name_en": "Cashews, raw",
+  "display_en": "Cashews",
+  "category": "nut",
+  "tags": [
+   "allergen:tree_nut"
+  ],
+  "min_g": 10,
+  "max_g": 40,
+  "step_g": 5,
+  "slots": "BLD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "hạt điều",
+   "cashew",
+   "cashews"
+  ],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 170162,
+   "description": "Nuts, cashew nuts, raw",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/170162/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 553.0,
+   "protein_g": 18.22,
+   "fat_g": 43.85,
+   "carb_g": 30.19,
+   "fiber_g": 3.3,
+   "calcium_mg": 37.0,
+   "iron_mg": 6.68,
+   "phosphorus_mg": 593.0,
+   "potassium_mg": 660.0,
+   "sodium_mg": 12.0,
+   "zinc_mg": 5.78,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "soybean_oil",
+  "name_vi": "Dầu đậu nành",
+  "name_en": "Soybean oil",
+  "display_en": "Soybean oil",
+  "category": "fat",
+  "tags": [
+   "allergen:soy"
+  ],
+  "min_g": 0,
+  "max_g": 20,
+  "step_g": 5,
+  "slots": "BLD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 171411,
+   "description": "Oil, soybean, salad or cooking",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/171411/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 884.0,
+   "protein_g": 0.0,
+   "fat_g": 100.0,
+   "carb_g": 0.0,
+   "fiber_g": 0.0,
+   "calcium_mg": 0.0,
+   "iron_mg": 0.05,
+   "phosphorus_mg": 0.0,
+   "potassium_mg": 0.0,
+   "sodium_mg": 0.0,
+   "zinc_mg": 0.01,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "olive_oil",
+  "name_vi": "Dầu ô liu",
+  "name_en": "Olive oil",
+  "display_en": "Olive oil",
+  "category": "fat",
+  "tags": [],
+  "min_g": 0,
+  "max_g": 20,
+  "step_g": 5,
+  "slots": "BLD",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [],
+  "portion": null,
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 171413,
+   "description": "Oil, olive, salad or cooking",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/171413/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 884.0,
+   "protein_g": 0.0,
+   "fat_g": 100.0,
+   "carb_g": 0.0,
+   "fiber_g": 0.0,
+   "calcium_mg": 1.0,
+   "iron_mg": 0.56,
+   "phosphorus_mg": 0.0,
+   "potassium_mg": 1.0,
+   "sodium_mg": 2.0,
+   "zinc_mg": 0.0,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "ice_cream_vanilla",
+  "name_vi": "Kem vani",
+  "name_en": "Vanilla ice cream",
+  "display_en": "Vanilla ice cream",
+  "category": "snack",
+  "tags": [
+   "animal",
+   "dairy",
+   "allergen:milk",
+   "allergen:egg"
+  ],
+  "min_g": 5,
+  "max_g": 198,
+  "step_g": 5,
+  "slots": "S",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "kem",
+   "kem vani",
+   "kem vanilla",
+   "ice cream",
+   "ice creams",
+   "vanilla ice cream"
+  ],
+  "portion": {
+   "description": "1/2 cup",
+   "grams": 66,
+   "source": "USDA food_portion (fdc_id 167575)"
+  },
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 167575,
+   "description": "Ice creams, vanilla",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/167575/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 207.0,
+   "protein_g": 3.5,
+   "fat_g": 11.0,
+   "carb_g": 23.6,
+   "fiber_g": 0.7,
+   "calcium_mg": 128.0,
+   "iron_mg": 0.09,
+   "phosphorus_mg": 105.0,
+   "potassium_mg": 199.0,
+   "sodium_mg": 80.0,
+   "zinc_mg": 0.69,
+   "vitamin_d_ug": 0.2
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "ice_cream_chocolate",
+  "name_vi": "Kem sô-cô-la",
+  "name_en": "Chocolate ice cream",
+  "display_en": "Chocolate ice cream",
+  "category": "snack",
+  "tags": [
+   "animal",
+   "dairy",
+   "allergen:milk",
+   "allergen:egg"
+  ],
+  "min_g": 5,
+  "max_g": 198,
+  "step_g": 5,
+  "slots": "S",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "kem sô-cô-la",
+   "kem socola",
+   "kem chocolate",
+   "chocolate ice cream"
+  ],
+  "portion": {
+   "description": "0.5 cup (4 fl oz)",
+   "grams": 66,
+   "source": "USDA food_portion (fdc_id 168809)"
+  },
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 168809,
+   "description": "Ice creams, chocolate",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/168809/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 216.0,
+   "protein_g": 3.8,
+   "fat_g": 11.0,
+   "carb_g": 28.2,
+   "fiber_g": 1.2,
+   "calcium_mg": 109.0,
+   "iron_mg": 0.93,
+   "phosphorus_mg": 107.0,
+   "potassium_mg": 249.0,
+   "sodium_mg": 76.0,
+   "zinc_mg": 0.58,
+   "vitamin_d_ug": 0.2
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "milk_chocolate",
+  "name_vi": "Sô-cô-la sữa",
+  "name_en": "Milk chocolate",
+  "display_en": "Milk chocolate",
+  "category": "snack",
+  "tags": [
+   "animal",
+   "dairy",
+   "allergen:milk",
+   "allergen:soy"
+  ],
+  "min_g": 5,
+  "max_g": 132,
+  "step_g": 5,
+  "slots": "S",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "sô-cô-la",
+   "socola",
+   "chocolate",
+   "sô cô la",
+   "chocolate",
+   "chocolate bar"
+  ],
+  "portion": {
+   "description": "1 bar (1.55 oz)",
+   "grams": 44,
+   "source": "USDA food_portion (fdc_id 167587)"
+  },
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 167587,
+   "description": "Candies, milk chocolate",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/167587/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 535.0,
+   "protein_g": 7.65,
+   "fat_g": 29.66,
+   "carb_g": 59.4,
+   "fiber_g": 3.4,
+   "calcium_mg": 189.0,
+   "iron_mg": 2.35,
+   "phosphorus_mg": 208.0,
+   "potassium_mg": 372.0,
+   "sodium_mg": 79.0,
+   "zinc_mg": 2.3,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "dark_chocolate",
+  "name_vi": "Sô-cô-la đen 70–85%",
+  "name_en": "Dark chocolate 70-85%",
+  "display_en": "Dark chocolate (70–85%)",
+  "category": "snack",
+  "tags": [
+   "allergen:soy",
+   "allergen:milk"
+  ],
+  "min_g": 5,
+  "max_g": 85,
+  "step_g": 5,
+  "slots": "S",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "sô-cô-la đen",
+   "socola đen",
+   "chocolate đen",
+   "dark chocolate"
+  ],
+  "portion": {
+   "description": "1 oz",
+   "grams": 28.35,
+   "source": "USDA food_portion (fdc_id 170273)"
+  },
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 170273,
+   "description": "Chocolate, dark, 70-85% cacao solids",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/170273/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 598.0,
+   "protein_g": 7.79,
+   "fat_g": 42.63,
+   "carb_g": 45.9,
+   "fiber_g": 10.9,
+   "calcium_mg": 73.0,
+   "iron_mg": 11.9,
+   "phosphorus_mg": 308.0,
+   "potassium_mg": 715.0,
+   "sodium_mg": 20.0,
+   "zinc_mg": 3.31,
+   "vitamin_d_ug": null
+  },
+  "unverified_nutrients": [
+   "vitamin_d_ug"
+  ]
+ },
+ {
+  "code": "butter_cookies",
+  "name_vi": "Bánh quy bơ",
+  "name_en": "Butter cookies",
+  "display_en": "Butter cookies",
+  "category": "snack",
+  "tags": [
+   "animal",
+   "dairy",
+   "gluten",
+   "allergen:gluten",
+   "allergen:wheat",
+   "allergen:milk",
+   "allergen:egg"
+  ],
+  "min_g": 5,
+  "max_g": 85,
+  "step_g": 5,
+  "slots": "S",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "bánh quy",
+   "bánh quy bơ",
+   "cookies",
+   "biscuits"
+  ],
+  "portion": {
+   "description": "1 oz",
+   "grams": 28.35,
+   "source": "USDA food_portion (fdc_id 172819)"
+  },
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 172819,
+   "description": "Cookies, butter, commercially prepared, unenriched",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/172819/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 467.0,
+   "protein_g": 6.1,
+   "fat_g": 18.8,
+   "carb_g": 68.9,
+   "fiber_g": 0.8,
+   "calcium_mg": 29.0,
+   "iron_mg": 0.29,
+   "phosphorus_mg": 102.0,
+   "potassium_mg": 111.0,
+   "sodium_mg": 351.0,
+   "zinc_mg": 0.38,
+   "vitamin_d_ug": null
+  },
+  "unverified_nutrients": [
+   "vitamin_d_ug"
+  ]
+ },
+ {
+  "code": "choc_chip_cookies",
+  "name_vi": "Bánh quy sô-cô-la chip",
+  "name_en": "Chocolate chip cookies",
+  "display_en": "Chocolate chip cookies",
+  "category": "snack",
+  "tags": [
+   "animal",
+   "dairy",
+   "gluten",
+   "allergen:gluten",
+   "allergen:wheat",
+   "allergen:milk",
+   "allergen:egg",
+   "allergen:soy"
+  ],
+  "min_g": 5,
+  "max_g": 85,
+  "step_g": 5,
+  "slots": "S",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "bánh quy sô-cô-la",
+   "cookie",
+   "chocolate chip cookie",
+   "chocolate chip cookies"
+  ],
+  "portion": {
+   "description": "1 oz",
+   "grams": 28.35,
+   "source": "USDA food_portion (fdc_id 172820)"
+  },
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 172820,
+   "description": "Cookies, chocolate chip, commercially prepared, regular, higher fat, unenriched",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/172820/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 481.0,
+   "protein_g": 5.4,
+   "fat_g": 22.6,
+   "carb_g": 66.8,
+   "fiber_g": 2.5,
+   "calcium_mg": 25.0,
+   "iron_mg": 1.0,
+   "phosphorus_mg": 108.0,
+   "potassium_mg": 135.0,
+   "sodium_mg": 315.0,
+   "zinc_mg": 0.64,
+   "vitamin_d_ug": null
+  },
+  "unverified_nutrients": [
+   "vitamin_d_ug"
+  ]
+ },
+ {
+  "code": "potato_chips",
+  "name_vi": "Snack khoai tây",
+  "name_en": "Potato chips, salted",
+  "display_en": "Potato chips",
+  "category": "snack",
+  "tags": [],
+  "min_g": 5,
+  "max_g": 85,
+  "step_g": 5,
+  "slots": "S",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "snack",
+   "bim bim",
+   "snack khoai tây",
+   "chips",
+   "crisps",
+   "potato chips"
+  ],
+  "portion": {
+   "description": "1 oz",
+   "grams": 28.35,
+   "source": "USDA food_portion (fdc_id 169677)"
+  },
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 169677,
+   "description": "Snacks, potato chips, plain, salted",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/169677/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 532.0,
+   "protein_g": 6.39,
+   "fat_g": 33.98,
+   "carb_g": 53.83,
+   "fiber_g": 3.1,
+   "calcium_mg": 21.0,
+   "iron_mg": 1.28,
+   "phosphorus_mg": 153.0,
+   "potassium_mg": 1196.0,
+   "sodium_mg": 527.0,
+   "zinc_mg": 1.09,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "sponge_cake",
+  "name_vi": "Bánh bông lan",
+  "name_en": "Sponge cake",
+  "display_en": "Sponge cake",
+  "category": "snack",
+  "tags": [
+   "animal",
+   "gluten",
+   "allergen:gluten",
+   "allergen:wheat",
+   "allergen:egg",
+   "allergen:milk"
+  ],
+  "min_g": 5,
+  "max_g": 114,
+  "step_g": 5,
+  "slots": "S",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "bánh bông lan",
+   "sponge cake"
+  ],
+  "portion": {
+   "description": "1 piece (1/12 of 16 oz cake)",
+   "grams": 38,
+   "source": "USDA food_portion (fdc_id 172706)"
+  },
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 172706,
+   "description": "Cake, sponge, commercially prepared",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/172706/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 290.0,
+   "protein_g": 5.4,
+   "fat_g": 2.7,
+   "carb_g": 61.0,
+   "fiber_g": 0.5,
+   "calcium_mg": 70.0,
+   "iron_mg": 2.72,
+   "phosphorus_mg": 137.0,
+   "potassium_mg": 99.0,
+   "sodium_mg": 623.0,
+   "zinc_mg": 0.51,
+   "vitamin_d_ug": 0.2
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "chocolate_cake",
+  "name_vi": "Bánh kem sô-cô-la",
+  "name_en": "Chocolate cake with frosting",
+  "display_en": "Chocolate cake",
+  "category": "snack",
+  "tags": [
+   "animal",
+   "dairy",
+   "gluten",
+   "allergen:gluten",
+   "allergen:wheat",
+   "allergen:egg",
+   "allergen:milk",
+   "allergen:soy"
+  ],
+  "min_g": 5,
+  "max_g": 192,
+  "step_g": 5,
+  "slots": "S",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "bánh kem",
+   "bánh sinh nhật",
+   "cake",
+   "birthday cake",
+   "chocolate cake"
+  ],
+  "portion": {
+   "description": "1 piece (1/8 of 18 oz cake)",
+   "grams": 64,
+   "source": "USDA food_portion (fdc_id 174934)"
+  },
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 174934,
+   "description": "Cake, chocolate, commercially prepared with chocolate frosting, in-store bakery",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/174934/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 389.0,
+   "protein_g": 3.48,
+   "fat_g": 20.05,
+   "carb_g": 52.84,
+   "fiber_g": 2.2,
+   "calcium_mg": 30.0,
+   "iron_mg": 3.04,
+   "phosphorus_mg": 137.0,
+   "potassium_mg": 270.0,
+   "sodium_mg": 348.0,
+   "zinc_mg": 0.58,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "cola",
+  "name_vi": "Nước ngọt có ga (cola)",
+  "name_en": "Cola",
+  "display_en": "Cola",
+  "category": "snack",
+  "tags": [],
+  "min_g": 10,
+  "max_g": 1110,
+  "step_g": 10,
+  "slots": "S",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "nước ngọt",
+   "coca",
+   "cola",
+   "pepsi",
+   "soda",
+   "coke",
+   "coca cola",
+   "soft drink"
+  ],
+  "portion": {
+   "description": "1 can or bottle (12 fl oz)",
+   "grams": 370,
+   "source": "USDA food_portion (fdc_id 174852)"
+  },
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 174852,
+   "description": "Beverages, carbonated, cola, regular",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/174852/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 42.0,
+   "protein_g": 0.0,
+   "fat_g": 0.25,
+   "carb_g": 10.36,
+   "fiber_g": 0.0,
+   "calcium_mg": 1.0,
+   "iron_mg": 0.02,
+   "phosphorus_mg": 9.0,
+   "potassium_mg": 5.0,
+   "sodium_mg": 3.0,
+   "zinc_mg": 0.09,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "croissant",
+  "name_vi": "Bánh sừng bò",
+  "name_en": "Butter croissant",
+  "display_en": "Croissant",
+  "category": "snack",
+  "tags": [
+   "animal",
+   "dairy",
+   "gluten",
+   "allergen:gluten",
+   "allergen:wheat",
+   "allergen:milk",
+   "allergen:egg"
+  ],
+  "min_g": 5,
+  "max_g": 171,
+  "step_g": 5,
+  "slots": "S",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "bánh sừng bò",
+   "croissant"
+  ],
+  "portion": {
+   "description": "1 croissant, medium",
+   "grams": 57,
+   "source": "USDA food_portion (fdc_id 174987)"
+  },
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 174987,
+   "description": "Croissants, butter",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/174987/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 406.0,
+   "protein_g": 8.2,
+   "fat_g": 21.0,
+   "carb_g": 45.8,
+   "fiber_g": 2.6,
+   "calcium_mg": 37.0,
+   "iron_mg": 2.03,
+   "phosphorus_mg": 105.0,
+   "potassium_mg": 118.0,
+   "sodium_mg": 384.0,
+   "zinc_mg": 0.75,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "popcorn",
+  "name_vi": "Bắp rang (không bơ)",
+  "name_en": "Popcorn, air-popped",
+  "display_en": "Popcorn",
+  "category": "snack",
+  "tags": [],
+  "min_g": 5,
+  "max_g": 85,
+  "step_g": 5,
+  "slots": "S",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "bắp rang",
+   "bỏng ngô",
+   "popcorn"
+  ],
+  "portion": {
+   "description": "1 oz",
+   "grams": 28.35,
+   "source": "USDA food_portion (fdc_id 167959)"
+  },
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 167959,
+   "description": "Snacks, popcorn, air-popped",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/167959/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 387.0,
+   "protein_g": 12.94,
+   "fat_g": 4.54,
+   "carb_g": 77.78,
+   "fiber_g": 14.5,
+   "calcium_mg": 7.0,
+   "iron_mg": 3.19,
+   "phosphorus_mg": 358.0,
+   "potassium_mg": 329.0,
+   "sodium_mg": 8.0,
+   "zinc_mg": 3.08,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "vanilla_pudding",
+  "name_vi": "Pudding vani",
+  "name_en": "Vanilla pudding",
+  "display_en": "Vanilla pudding",
+  "category": "snack",
+  "tags": [
+   "animal",
+   "dairy",
+   "allergen:milk"
+  ],
+  "min_g": 10,
+  "max_g": 330,
+  "step_g": 10,
+  "slots": "S",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "pudding"
+  ],
+  "portion": {
+   "description": "1 container refrigerated 4 oz",
+   "grams": 110,
+   "source": "USDA food_portion (fdc_id 169608)"
+  },
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 169608,
+   "description": "Puddings, vanilla, ready-to-eat",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/169608/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 130.0,
+   "protein_g": 1.45,
+   "fat_g": 3.78,
+   "carb_g": 22.6,
+   "fiber_g": 0.0,
+   "calcium_mg": 49.0,
+   "iron_mg": 0.09,
+   "phosphorus_mg": 41.0,
+   "potassium_mg": 65.0,
+   "sodium_mg": 172.0,
+   "zinc_mg": 0.16,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "french_fries",
+  "name_vi": "Khoai tây chiên",
+  "name_en": "French fries",
+  "display_en": "French fries",
+  "category": "snack",
+  "tags": [],
+  "min_g": 10,
+  "max_g": 351,
+  "step_g": 10,
+  "slots": "S",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "khoai tây chiên",
+   "fries",
+   "french fries"
+  ],
+  "portion": {
+   "description": "1 serving medium",
+   "grams": 117,
+   "source": "USDA food_portion (fdc_id 170698)"
+  },
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 170698,
+   "description": "Fast foods, potato, french fried in vegetable oil",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/170698/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 312.0,
+   "protein_g": 3.43,
+   "fat_g": 14.73,
+   "carb_g": 41.44,
+   "fiber_g": 3.8,
+   "calcium_mg": 18.0,
+   "iron_mg": 0.81,
+   "phosphorus_mg": 125.0,
+   "potassium_mg": 579.0,
+   "sodium_mg": 210.0,
+   "zinc_mg": 0.5,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "fried_chicken",
+  "name_vi": "Gà rán",
+  "name_en": "Fried chicken breast with skin & breading",
+  "display_en": "Fried chicken",
+  "category": "snack",
+  "tags": [
+   "animal",
+   "meat",
+   "poultry",
+   "gluten",
+   "allergen:gluten",
+   "allergen:wheat",
+   "allergen:egg",
+   "allergen:milk"
+  ],
+  "min_g": 10,
+  "max_g": 321,
+  "step_g": 10,
+  "slots": "S",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "gà rán",
+   "gà chiên giòn",
+   "kfc",
+   "fried chicken",
+   "kfc"
+  ],
+  "portion": {
+   "description": "1 breast, bone and skin removed",
+   "grams": 107,
+   "source": "USDA food_portion (fdc_id 170756)"
+  },
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 170756,
+   "description": "Fast Foods, Fried Chicken, Breast, meat and skin and breading",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/170756/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 230.0,
+   "protein_g": 23.51,
+   "fat_g": 12.44,
+   "carb_g": 6.03,
+   "fiber_g": 0.1,
+   "calcium_mg": 45.0,
+   "iron_mg": 0.72,
+   "phosphorus_mg": 230.0,
+   "potassium_mg": 282.0,
+   "sodium_mg": 657.0,
+   "zinc_mg": 0.92,
+   "vitamin_d_ug": 0.1
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "cheese_pizza",
+  "name_vi": "Pizza phô mai",
+  "name_en": "Cheese pizza",
+  "display_en": "Cheese pizza",
+  "category": "snack",
+  "tags": [
+   "animal",
+   "dairy",
+   "gluten",
+   "allergen:gluten",
+   "allergen:wheat",
+   "allergen:milk"
+  ],
+  "min_g": 5,
+  "max_g": 243,
+  "step_g": 5,
+  "slots": "S",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "pizza",
+   "pizza",
+   "pizzas"
+  ],
+  "portion": {
+   "description": "1 serving 9 servings per 24 oz package",
+   "grams": 81,
+   "source": "USDA food_portion (fdc_id 170317)"
+  },
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 170317,
+   "description": "Pizza, cheese topping, regular crust, frozen, cooked",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/170317/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 268.0,
+   "protein_g": 10.36,
+   "fat_g": 12.28,
+   "carb_g": 29.02,
+   "fiber_g": 2.2,
+   "calcium_mg": 179.0,
+   "iron_mg": 2.27,
+   "phosphorus_mg": 179.0,
+   "potassium_mg": 152.0,
+   "sodium_mg": 447.0,
+   "zinc_mg": 1.32,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "cheeseburger",
+  "name_vi": "Hamburger phô mai",
+  "name_en": "Cheeseburger",
+  "display_en": "Cheeseburger",
+  "category": "snack",
+  "tags": [
+   "animal",
+   "meat",
+   "beef",
+   "dairy",
+   "gluten",
+   "allergen:gluten",
+   "allergen:wheat",
+   "allergen:milk",
+   "allergen:sesame"
+  ],
+  "min_g": 5,
+  "max_g": 273,
+  "step_g": 5,
+  "slots": "S",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "hamburger",
+   "burger",
+   "burger",
+   "burgers",
+   "hamburger",
+   "cheeseburger"
+  ],
+  "portion": {
+   "description": "1 sandwich",
+   "grams": 91,
+   "source": "USDA food_portion (fdc_id 170690)"
+  },
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 170690,
+   "description": "Fast foods, cheeseburger; single, regular patty; plain",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/170690/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 308.0,
+   "protein_g": 16.51,
+   "fat_g": 14.72,
+   "carb_g": 28.03,
+   "fiber_g": 2.0,
+   "calcium_mg": 119.0,
+   "iron_mg": 2.71,
+   "phosphorus_mg": 161.0,
+   "potassium_mg": 196.0,
+   "sodium_mg": 515.0,
+   "zinc_mg": 2.49,
+   "vitamin_d_ug": 0.1
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "banana_chips",
+  "name_vi": "Chuối sấy",
+  "name_en": "Banana chips",
+  "display_en": "Banana chips",
+  "category": "snack",
+  "tags": [],
+  "min_g": 5,
+  "max_g": 85,
+  "step_g": 5,
+  "slots": "S",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "chuối sấy",
+   "banana chips"
+  ],
+  "portion": {
+   "description": "1 oz",
+   "grams": 28.35,
+   "source": "USDA food_portion (fdc_id 168849)"
+  },
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 168849,
+   "description": "Snacks, banana chips",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/168849/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 519.0,
+   "protein_g": 2.3,
+   "fat_g": 33.6,
+   "carb_g": 58.4,
+   "fiber_g": 7.7,
+   "calcium_mg": 18.0,
+   "iron_mg": 1.25,
+   "phosphorus_mg": 56.0,
+   "potassium_mg": 536.0,
+   "sodium_mg": 6.0,
+   "zinc_mg": 0.75,
+   "vitamin_d_ug": 0.0
+  },
+  "unverified_nutrients": []
+ },
+ {
+  "code": "orange_drink",
+  "name_vi": "Nước cam đóng hộp",
+  "name_en": "Orange juice drink",
+  "display_en": "Orange juice drink",
+  "category": "snack",
+  "tags": [],
+  "min_g": 10,
+  "max_g": 747,
+  "step_g": 10,
+  "slots": "S",
+  "gi": null,
+  "gi_source": null,
+  "gi_verified": false,
+  "aliases": [
+   "nước cam",
+   "orange juice"
+  ],
+  "portion": {
+   "description": "1 cup",
+   "grams": 249,
+   "source": "USDA food_portion (fdc_id 169044)"
+  },
+  "source": {
+   "dataset": "USDA FoodData Central, SR Legacy (2018-04)",
+   "fdc_id": 169044,
+   "description": "Beverages, Orange juice drink",
+   "publication_date": "2019-04-01",
+   "url": "https://fdc.nal.usda.gov/food-details/169044/nutrients"
+  },
+  "per_100g": {
+   "energy_kcal": 54.0,
+   "protein_g": 0.2,
+   "fat_g": 0.0,
+   "carb_g": 13.41,
+   "fiber_g": 0.2,
+   "calcium_mg": 2.0,
+   "iron_mg": 0.11,
+   "phosphorus_mg": 4.0,
+   "potassium_mg": 42.0,
+   "sodium_mg": 2.0,
+   "zinc_mg": 0.02,
+   "vitamin_d_ug": null
+  },
+  "unverified_nutrients": [
+   "vitamin_d_ug"
+  ]
+ }
+]

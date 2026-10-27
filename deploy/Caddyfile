@@ -1,0 +1,12 @@
+{$SITE_ADDRESS} {
+	encode gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		# Không có script/style inline (kể cả script chống nháy theme: /theme-init.js là file ngoài)
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'"
+	}
+	# Không ghi log truy cập (tránh lưu dữ liệu sức khỏe trong query/path)
+	reverse_proxy frontend:80
+}

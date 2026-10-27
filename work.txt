@@ -1,0 +1,96 @@
+Bạn là kỹ sư phần mềm và chuyên gia dinh dưỡng ứng dụng. Nhiệm vụ của bạn là giúp tôi hoàn thiện một ứng dụng đề xuất thực đơn và nguyên liệu nấu ăn dựa trên tình trạng sức khỏe của người dùng. Hãy làm việc theo từng bước nhỏ, hỏi lại khi thông tin chưa rõ, và không tự đưa ra con số hay giả định y khoa mà không ghi rõ nguồn hoặc nêu là giả định.
+
+## 1. Mô tả sản phẩm
+
+Ứng dụng hướng tới người dùng muốn ăn uống phù hợp với tình trạng sức khỏe và mức độ hoạt động của bản thân.
+
+Luồng chính:
+- Khi đăng ký, người dùng nhập hồ sơ: giới tính, tuổi, chiều cao, cân nặng, mức độ hoạt động/lao động/tập luyện, mục tiêu (giảm cân, giữ cân, tăng cơ...), tình trạng bệnh nền (ví dụ: tiểu đường type 1/2, cao huyết áp, dị ứng thực phẩm, không ăn chay/mặn...).
+- Hệ thống tính nhu cầu dinh dưỡng hằng ngày: năng lượng (kcal), protein, carbohydrate, chất béo, chất xơ, và vi chất (sắt, kẽm, canxi, vitamin D, ...). Mỗi chỉ số cần có nguồn tham chiếu và có thể được điều chỉnh theo bệnh nền.
+- Từ nhu cầu này, hệ thống đề xuất thực đơn theo ngày gồm nguyên liệu cụ thể với khối lượng (ví dụ: 300g ức gà, 150g rau cải, 100g gạo lứt).
+- Với mỗi món, AI agent đề xuất cách chế biến và gia vị/nguyên liệu phụ (dầu, muối, nước mắm, tỏi...).
+- Số bữa trong ngày phụ thuộc cường độ hoạt động trong hồ sơ: 2 bữa (trưa, tối) cho mức thấp; 3 bữa (sáng, trưa, tối) cho mức cao hơn. Ngưỡng cụ thể sẽ được định nghĩa trong phần thiết kế.
+- Các bữa trong cùng ngày có thể dùng chung nguyên liệu (ví dụ trưa và tối cùng dùng ức gà) để giảm lãng phí.
+- Món chính không được lặp lại quá 3 ngày liên tiếp.
+- Người dùng có thể tăng/giảm khối lượng từng nguyên liệu bằng nút + / -. Khi thay đổi, hệ thống tính lại các nguyên liệu còn lại để giữ mục tiêu dinh dưỡng.
+- Người dùng có thể tự thêm nguyên liệu đang có sẵn trong nhà. Hệ thống dùng chúng như ràng buộc cứng và tự đề xuất phần còn lại để cân bằng dinh dưỡng.
+- Giao diện tham khảo ứng dụng YAZIO: theo dõi theo ngày, vòng tròn/thanh tiến độ calo và macro, danh sách bữa ăn có thể mở rộng, thêm/sửa món nhanh.
+
+## 2. Ràng buộc kỹ thuật và dữ liệu
+
+- Công thức BMR: dùng Mifflin-St Jeor, TDEE = BMR × hệ số hoạt động. Ghi rõ hệ số dùng cho từng mức.
+- Dữ liệu thành phần dinh dưỡng nguyên liệu phải lấy từ nguồn có thể kiểm chứng (ví dụ USDA FoodData Central, Bảng thành phần thực phẩm Việt Nam của Viện Dinh dưỡng Quốc gia). Không được tự bịa giá trị dinh dưỡng. Nếu thiếu dữ liệu, đánh dấu rõ là "chưa xác minh".
+- Mọi con số về khuyến nghị vi chất (RDA/AI/UL) phải ghi rõ nguồn và độ tuổi/giới tính áp dụng.
+- Tách rõ ba lớp: (a) dữ liệu nguyên liệu, (b) bộ tính nhu cầu dinh dưỡng, (c) bộ sinh thực đơn và tối ưu. Mỗi lớp có thể kiểm thử độc lập.
+- Bộ sinh thực đơn nên là bài toán ràng buộc/tối ưu (ví dụ ILP hoặc heuristic có kiểm soát), không chỉ dựa vào xác suất ngôn ngữ. LLM chỉ nên dùng để diễn giải, đề xuất cách chế biến và giải thích cho người dùng; kết quả số liệu phải do bộ tính toán xác định đưa ra.
+- Lưu trữ dữ liệu sức khỏe: mã hóa khi truyền và khi lưu, kiểm soát truy cập theo người dùng, không đưa dữ liệu sức khỏe vào log hay analytics.
+
+## 3. Guardrail (bắt buộc)
+
+Y tế và an toàn:
+- Ứng dụng không chẩn đoán bệnh và không thay thế bác sĩ hay chuyên gia dinh dưỡng. Hiển thị cảnh báo này ở onboarding và ở màn hình thực đơn.
+- Với người có tiểu đường, ưu tiên kiểm soát carbohydrate và chỉ số đường huyết (GI/GL), tránh đề xuất gây hạ đường huyết nguy hiểm. Không đưa ra liều insulin hay thuốc. Khi người dùng dùng insulin hoặc thuốc hạ đường, hiển thị nhắc nhở tham khảo bác sĩ trước khi thay đổi chế độ ăn.
+- Với người có bệnh thận, tim mạch, gan, mang thai, hoặc đang cho con bú: không tự sinh thực đơn cho đến khi người dùng xác nhận đã tham khảo chuyên gia, và hiển thị giới hạn an toàn riêng cho từng trường hợp (cần được định nghĩa rõ, không tự suy diễn).
+- Sàn năng lượng: không đề xuất dưới ngưỡng an toàn (ví dụ dưới BMR hoặc dưới 1200 kcal/ngày cho nữ, 1500 kcal/ngày cho nam, cần xác minh lại). Nếu mục tiêu của người dùng yêu cầu thấp hơn, hiển thị cảnh báo và không cho phép tiếp tục mà không có xác nhận rõ ràng.
+- Phát hiện tín hiệu rối loạn ăn uống (ví dụ người dùng liên tục đặt mục tiêu cực thấp, lặp lại thao tác giảm calo sau khi đã ăn đủ): hiển thị thông điệp hỗ trợ và gợi ý tìm trợ giúp chuyên môn, không tiếp tục tối ưu cắt giảm.
+- Dị ứng và chế độ ăn (chay, halal, không gluten...) là ràng buộc cứng. Không bao giờ đề xuất nguyên liệu bị dị ứng, kể cả khi người dùng thêm tay.
+
+Chất lượng và trung thực:
+- Nếu không thể đạt mục tiêu dinh dưỡng với nguyên liệu người dùng có sẵn, hệ thống phải nói rõ thiếu chất nào và gợi ý nguyên liệu bổ sung. Không được âm thầm bỏ qua mục tiêu.
+- Không hiển thị kết quả tính toán với độ chính xác giả (ví dụ 2 chữ số thập phân cho dữ liệu chỉ chính xác ±20%).
+- Mọi món ăn hiển thị phải có tổng calo và macro được tính từ nguyên liệu, không tự gõ số.
+
+Bảo mật và quyền riêng tư:
+- Không ghi nội dung hồ sơ sức khỏe vào log lỗi.
+- Người dùng có thể xóa toàn bộ dữ liệu của mình.
+
+## 4. Yêu cầu độ bền (robustness)
+
+Hệ thống phải xử lý đúng các trường hợp sau và có test cho từng trường hợp:
+- Đầu vào vô lý hoặc ngoài khoảng (cân nặng 0, chiều cao 300 cm, tuổi âm, số thập phân lạ). Từ chối với thông báo rõ ràng, không crash.
+- Ràng buộc mâu thuẫn: ví dụ người dùng tự thêm 100g thịt nhưng đã dị ứng với thịt đó, hoặc tổng khối lượng nguyên liệu tự thêm vượt quá nhu cầu calo. Hệ thống phải phát hiện và báo lại.
+- Không đủ nguyên liệu trong cơ sở dữ liệu để đạt mục tiêu: trả về phương án tốt nhất kèm mức thiếu hụt, không trả lỗi trống.
+- Người dùng tăng/giảm nguyên liệu liên tục: cập nhật thực đơn nhất quán, không để tổng dinh dưỡng lệch khỏi mục tiêu quá ngưỡng cho phép (định nghĩa cụ thể, ví dụ ±5%).
+- Ràng buộc lặp món: món chính không lặp quá 3 ngày liên tiếp, kể cả sau khi người dùng chỉnh sửa. Kiểm tra bằng test tự động.
+- Số bữa thay đổi khi người dùng đổi mức hoạt động: giữ được dữ liệu cũ, không mất nguyên liệu đã chọn.
+- LLM trả về định dạng sai hoặc không ổn định: validate đầu ra bằng schema, retry có giới hạn, rồi fallback về trạng thái an toàn.
+- Mất kết nối hoặc timeout của dịch vụ AI: giữ thực đơn đã có, không ghi đè dữ liệu.
+
+## 5. Cách làm việc tôi mong muốn
+
+1. Trước khi viết code, hãy hỏi tôi các câu hỏi còn thiếu: stack công nghệ (web/mobile, backend, database), ngân sách dữ liệu, số lượng nguyên liệu mục tiêu ban đầu, ngôn ngữ giao diện (tiếng Việt, tiếng Anh, hoặc cả hai).
+2. Đề xuất kiến trúc tổng thể và sơ đồ dữ liệu (bảng người dùng, hồ sơ sức khỏe, nguyên liệu, giá trị dinh dưỡng, thực đơn, bữa ăn, món ăn, công thức chế biến). Chờ tôi xác nhận trước khi triển khai.
+3. Triển khai theo từng module nhỏ, mỗi module có test: (a) tính nhu cầu dinh dưỡng, (b) cơ sở dữ liệu nguyên liệu, (c) bộ sinh thực đơn có ràng buộc, (d) logic +/- và thêm nguyên liệu có sẵn, (e) giao diện.
+4. Với mỗi thay đổi, cho tôi biết: đã sửa gì, lý do, các giả định mới đưa vào, và phần nào chưa được xác minh.
+5. Không tự thêm tính năng ngoài phạm vi (ví dụ theo dõi cân nặng, kết nối thiết bị đeo, thanh toán) trừ khi tôi yêu cầu.
+6. Viết ngắn gọn, đi thẳng vào vấn đề. Dùng tiếng Việt cho tài liệu và giải thích, giữ tên kỹ thuật bằng tiếng Anh khi cần.
+
+## 6. Tiêu chí hoàn thành
+
+- Người dùng mới đăng ký và nhận được nhu cầu dinh dưỡng hằng ngày kèm nguồn tham chiếu.
+- Thực đơn 2 hoặc 3 bữa tùy mức hoạt động, với khối lượng nguyên liệu, tổng calo và macro khớp mục tiêu trong ngưỡng sai số đã định.
+- Người dùng chỉnh +/- được và hệ thống cân bằng lại các nguyên liệu còn lại.
+- Người dùng thêm nguyên liệu có sẵn và hệ thống đề xuất phần còn lại.
+- Toàn bộ guardrail ở mục 3 có test và hoạt động.
+- Toàn bộ trường hợp robustness ở mục 4 có test tự động, đạt tỷ lệ pass 100%.
+- Có tài liệu hướng dẫn chạy, README, và danh sách giả định/nguồn dữ liệu.
+
+## Phạm vi MVP
+- Mục tiêu: bản demo cho khoảng 10 người test thật. Dữ liệu sức khỏe vẫn là dữ liệu thật nên toàn bộ guardrail ở mục 3 là bắt buộc trong MVP.
+- Thiết kế để mở rộng: tách service tính dinh dưỡng, service sinh thực đơn, service AI; dùng PostgreSQL; không hard-code số người dùng hay số nguyên liệu.
+- Không làm trong MVP: mobile app, thanh toán, thông báo đẩy, đồng bộ thiết bị đeo, theo dõi cân nặng dài hạn, đa ngôn ngữ đầy đủ (chỉ tiếng Việt, cấu trúc i18n sẵn).
+
+## Stack
+- Frontend: React + TypeScript + Vite, TanStack Query, React Router.
+- Backend: FastAPI, Pydantic v2, SQLAlchemy 2.0, Alembic.
+- Database: PostgreSQL (Docker Compose).
+- Tối ưu thực đơn: PuLP hoặc OR-Tools (ILP), có test độc lập.
+- Auth: JWT access token ngắn hạn + refresh token.
+- Triển khai demo: Docker Compose gồm frontend, backend, postgres; có .env.example và README.
+
+## Tiêu chí hoàn thành MVP
+- Người test đăng ký, nhập hồ sơ, nhận nhu cầu dinh dưỡng kèm nguồn.
+- Nhận thực đơn 2 hoặc 3 bữa, tổng calo và macro nằm trong ±5% mục tiêu.
+- Chỉnh +/- và thêm nguyên liệu có sẵn; hệ thống cân bằng lại và báo rõ nếu không đạt mục tiêu.
+- Guardrail mục 3 và toàn bộ test mục 4 pass 100%.
+- Có tài liệu: README, danh sách giả định, nguồn dữ liệu, hướng dẫn chạy demo.

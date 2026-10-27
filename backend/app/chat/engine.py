@@ -1,0 +1,341 @@
+"""Logic xác định của chatbot. Không I/O: mọi dữ liệu và planner được truyền qua ChatContext.
+Mọi câu trả lời lấy từ catalog i18n theo `ctx.lang` (app/i18n)."""
+
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from datetime import date, datetime, timedelta
+
+from app.chat.schemas import ChatReply, DetectedFood, ParsedIntent, Proposal
+from app.core.i18n import Lang, Msg, name_of, tr
+from app.foods.catalog import FoodCatalog
+from app.foods.matching import find_foods, find_unknown_compounds
+from app.foods.restrictions import exclusion_reason, reason_msg
+from app.guardrails.eating_disorder import SUPPORT_KEY, SafetyEventIn, detect_text_signals, would_flag
+from app.nutrition.compensation import (
+    MAX_DAYS,
+    MEAL_FLOOR_SHARE,
+    DayEnergy,
+    cheat_day_energy,
+    plan_compensation,
+)
+from app.planner.rotation import forbidden_mains
+from app.planner.schemas import DayPlan, LockedItem, Requirement
+
+MAX_SNACK_PORTIONS = 10
+
+# plan_fn(day, required, snack_items, energy_override_kcal, min_meal_energy_kcal) -> DayPlan
+PlanFn = Callable[[date, list[Requirement], list[LockedItem], float | None, float | None], DayPlan]
+
+
+@dataclass
+class ChatContext:
+    now: datetime
+    slots: list[str]
+    allergies: list[str]
+    diets: list[str]
+    catalog_full: FoodCatalog  # chưa lọc (để giải thích vì sao bị loại)
+    catalog: FoodCatalog  # đã lọc + nguyên liệu riêng của người dùng
+    energy_target: Callable[[date], float]  # mục tiêu năng lượng ngày (đã gồm điều chỉnh bù)
+    energy_floor: float
+    plan_fn: PlanFn
+    mains_by_date: dict[date, set[str]] = field(default_factory=dict)
+    snacks_by_date: dict[date, list[LockedItem]] = field(default_factory=dict)
+    blocked_conditions: list[str] = field(default_factory=list)
+    safety_events: list[SafetyEventIn] = field(default_factory=list)
+    ed_flagged: bool = False
+    lang: Lang = "vi"  # ngôn ngữ câu trả lời (Accept-Language); tin đã lưu giữ nguyên ngôn ngữ lúc gửi
+
+    def t(self, key: str, **params) -> str:
+        return tr(key, self.lang, **params)
+
+    def food_name(self, code: str) -> str:
+        cat = self.catalog if code in self.catalog.foods else self.catalog_full
+        return name_of(cat.food(code), self.lang)
+
+    def slot_name(self, slot: str) -> str:
+        return self.t(f"slot.{slot}")
+
+    def inline(self, name: str) -> str:
+        """Tên đặt giữa câu: tiếng Việt viết thường như cũ; tiếng Anh giữ nguyên (tên hiển thị đã tự nhiên)."""
+        return name.lower() if self.lang == "vi" else name
+
+
+def kcal(v: float) -> int:
+    """Hiển thị năng lượng làm tròn 10 kcal (dữ liệu chỉ chính xác ±10–20%)."""
+    return int(round(v / 10.0) * 10)
+
+
+def _plan_lines(plan: DayPlan, ctx: ChatContext) -> list[str]:
+    lines = []
+    for m in plan.meals:
+        dish = name_of(ctx.catalog_full.dishes[m.dish_code], ctx.lang) if m.dish_code else None
+        items = ", ".join(f"{int(it.grams)} g {ctx.inline(ctx.food_name(it.food_code))}" for it in m.items)
+        lines.append(f"• {ctx.slot_name(m.slot)}{' — ' + dish if dish else ''}: {items} "
+                     f"(~{kcal(m.totals['energy_kcal'])} kcal)")
+    return lines
+
+
+def _target_day(p: ParsedIntent, now: datetime) -> date:
+    return now.date() + timedelta(days=1) if p.day == "tomorrow" else now.date()
+
+
+def _default_slot(ctx: ChatContext, day: date) -> str:
+    if day > ctx.now.date():
+        return "lunch"
+    h = ctx.now.hour
+    if h < 10 and "breakfast" in ctx.slots:
+        return "breakfast"
+    if h < 14:
+        return "lunch"
+    return "dinner"
+
+
+def _meal_energy(plan: DayPlan) -> float:
+    return sum(m.totals.get("energy_kcal", 0.0) for m in plan.meals if m.slot != "snack")
+
+
+def handle(text: str, parsed: ParsedIntent, ctx: ChatContext, parser_name: str = "rules") -> ChatReply:
+    reply = _handle(text, parsed, ctx)
+    reply.parser = parser_name
+    return reply
+
+
+def _handle(text: str, parsed: ParsedIntent, ctx: ChatContext) -> ChatReply:
+    # ---------- 1. Guardrail rối loạn ăn uống ----------
+    signals = detect_text_signals(text)
+    if parsed.intent == "restrict" and "RESTRICT_INTENT" not in signals and "DISTRESS" not in signals:
+        signals.append("RESTRICT_INTENT")
+    if "DISTRESS" in signals:
+        return ChatReply(kind="support", text=ctx.t(SUPPORT_KEY), safety_events=["DISTRESS"])
+    if "RESTRICT_INTENT" in signals:
+        flagged = ctx.ed_flagged or would_flag(ctx.safety_events, "RESTRICT_INTENT", ctx.now)
+        msg = ctx.t(SUPPORT_KEY) if flagged else ctx.t("chat.restrict", floor=kcal(ctx.energy_floor))
+        return ChatReply(kind="support", text=msg, safety_events=["RESTRICT_INTENT"])
+
+    # ---------- 2. Nhận diện món ----------
+    matches = find_foods(text, ctx.catalog_full)
+    for mention in parsed.mentions:  # LLM có thể tách tên món; vẫn phải khớp catalog bằng quy tắc
+        for m in find_foods(mention, ctx.catalog_full):
+            if all(m.food_code != x.food_code for x in matches):
+                matches.append(m)
+    unknown = [m for m in parsed.mentions if not find_foods(m, ctx.catalog_full) and not find_foods(m, ctx.catalog)]
+    user_names = {f.name_vi.lower() for f in ctx.catalog.foods.values() if f.user_provided}
+    unknown += [c for c in find_unknown_compounds(text) if c not in unknown and c not in user_names]
+    # nguyên liệu riêng của người dùng (nhập từ nhãn)
+    for m in find_foods(text, ctx.catalog):
+        if m.food_code not in ctx.catalog_full.foods and all(m.food_code != x.food_code for x in matches):
+            matches.append(m)
+
+    if not matches or (unknown and not [m for m in matches if m.food_code]):
+        if parsed.intent == "want_food" or unknown:
+            what = ctx.t("chat.unknown_named", names=", ".join(unknown)) if unknown else ctx.t("chat.unknown_any")
+            return ChatReply(kind="need_label", unknown_mentions=unknown, text=ctx.t("chat.need_label", what=what))
+        return ChatReply(kind="info", text=ctx.t("chat.help"))
+
+    detected: list[DetectedFood] = []
+    for m in matches:
+        cat = ctx.catalog if m.food_code in ctx.catalog.foods else ctx.catalog_full
+        f = cat.food(m.food_code)
+        reason = None if m.food_code in ctx.catalog.foods else exclusion_reason(f, ctx.allergies, ctx.diets)
+        role = cat.role(m.food_code)
+        detected.append(DetectedFood(food_code=f.code, name=name_of(f, ctx.lang), role=role, allowed=reason is None,
+                                     reason=reason))
+
+    refused = [d for d in detected if not d.allowed]
+    ok = [d for d in detected if d.allowed]
+    refusal_text = ""
+    if refused:
+        # Lý do luôn là tên đã dịch ("dị ứng cá" / "fish allergy"), không bao giờ là mã thô
+        refusal_text = " ".join(ctx.t("chat.refusal", food=ctx.inline(d.name), reason=reason_msg(d.reason))
+                                for d in refused)
+        if not ok:
+            return ChatReply(kind="refusal", text=refusal_text, detected=detected, unknown_mentions=unknown)
+
+    # ---------- 3. Bệnh nền nhạy cảm: chưa được sinh thực đơn ----------
+    if ctx.blocked_conditions:
+        conds = ", ".join(ctx.t(f"condition.{c}") for c in ctx.blocked_conditions)
+        return ChatReply(kind="refusal", detected=detected, text=ctx.t("chat.blocked", conditions=conds))
+
+    day = _target_day(parsed, ctx.now)
+    mains = [d for d in ok if d.role == "main"]
+    sides = [d for d in ok if d.role == "side"]
+    snacks = [d for d in ok if d.role == "snack"]
+
+    # ---------- 4. Món chính / phụ → xây thực đơn xoay quanh ----------
+    required: list[Requirement] = []
+    notes: list[str] = []
+    slot = parsed.slot if parsed.slot in ctx.slots else None
+    if parsed.slot and parsed.slot not in ("snack", None) and parsed.slot not in ctx.slots:
+        notes.append(ctx.t("chat.slot_not_in_plan", slot=ctx.slot_name(parsed.slot)))
+    used_slots: set[str] = set()
+    for d in mains[:2]:
+        want_slot = slot or _default_slot(ctx, day)
+        cands = [x for x in ctx.catalog.dishes.values() if d.food_code in x.main]
+        forbidden = forbidden_mains(day, ctx.mains_by_date, [c.code for c in cands])
+        order = [want_slot] + [s for s in ctx.slots if s != want_slot]
+        chosen = None
+        for s in order:
+            if s in used_slots:
+                continue
+            ok_dishes = sorted(c.code for c in cands if c.allowed_in(s) and c.code not in forbidden)
+            if ok_dishes:
+                chosen = (ok_dishes[0], s)
+                break
+        if chosen is None:
+            if cands and all(c.code in forbidden for c in cands):
+                when = ctx.t("chat.day.today" if day == ctx.now.date() else "chat.day.selected")
+                notes.append(ctx.t("chat.rotation_blocked", food=ctx.inline(d.name), when=when))
+            else:
+                notes.append(ctx.t("chat.no_dish_for", food=ctx.inline(d.name)))
+            continue
+        required.append(Requirement(kind="dish", code=chosen[0], slot=chosen[1]))
+        used_slots.add(chosen[1])
+        if chosen[1] != want_slot:
+            notes.append(ctx.t("chat.moved_to_slot", food=d.name, slot=ctx.slot_name(chosen[1]).lower()))
+    for d in sides:
+        f = ctx.catalog.food(d.food_code)
+        s = next(iter(used_slots), None) or slot
+        if s and not f.allowed_in(s):
+            s = None
+        required.append(Requirement(kind="food", code=d.food_code, slot=s))
+
+    existing_snacks = list(ctx.snacks_by_date.get(day, []))
+
+    if not snacks:
+        if not required:
+            return ChatReply(kind="info", detected=detected, unknown_mentions=unknown,
+                             text=" ".join([refusal_text, *notes]).strip() or ctx.t("chat.no_change"))
+        plan = ctx.plan_fn(day, required, existing_snacks, None, None)
+        text_lines = [ctx.t("chat.propose_around", day=_day_name(day, ctx),
+                            foods=", ".join(ctx.inline(d.name) for d in mains + sides)), *_plan_lines(plan, ctx)]
+        text_lines.append(_totals_line(plan, ctx.energy_target(day), ctx))
+        text_lines += _shortfall_lines(plan, ctx)
+        text_lines += notes
+        if refusal_text:
+            text_lines.append(refusal_text)
+        return ChatReply(kind="proposal", detected=detected, unknown_mentions=unknown, text="\n".join(text_lines),
+                         proposals=[Proposal(key="plan_update", label=ctx.t("chat.label.apply_plan"), day=day,
+                                             plan=plan)])
+
+    # ---------- 5. Đồ ăn vặt → điều chỉnh cả ngày / cheat day ----------
+    qty = {m.food_code: (m.qty_value, m.qty_unit) for m in matches}
+    new_items: list[LockedItem] = []
+    for sn in snacks:
+        food = ctx.catalog.food(sn.food_code)
+        portion_g = food.portion.grams if food.portion else 100.0
+        qv, qu = qty.get(sn.food_code, (None, None))
+        if qv is None and len(snacks) == 1:
+            qv, qu = parsed.quantity_value, parsed.quantity_unit
+        if qv and qu in ("g", "ml"):
+            grams = qv  # GIẢ ĐỊNH: đồ uống 1 ml ≈ 1 g
+        elif qv and qu == "portion":
+            grams = qv * portion_g
+        else:
+            grams = portion_g
+        if grams <= 0 or grams > MAX_SNACK_PORTIONS * portion_g:
+            return ChatReply(kind="warning", detected=detected, text=ctx.t(
+                "chat.snack_out_of_range", food=ctx.inline(sn.name), grams=f"{grams:g}", max=MAX_SNACK_PORTIONS))
+        new_items.append(LockedItem(food_code=sn.food_code, grams=round(grams), slot="snack", origin="snack"))
+
+    def snack_kcal(items: list[LockedItem]) -> float:
+        return sum(ctx.catalog.food(i.food_code).nutrient("energy_kcal", i.grams) for i in items)
+
+    def snack_dicts(items: list[LockedItem]) -> list[dict]:
+        return [{"food_code": i.food_code, "grams": i.grams} for i in items]
+
+    def fits(plan: DayPlan) -> bool:
+        return plan.status == "ok" and _meal_energy(plan) >= MEAL_FLOOR_SHARE * target - 1e-6
+
+    target = ctx.energy_target(day)
+    head = "; ".join(
+        f"{ctx.food_name(i.food_code)} {int(i.grams)} g ≈ "
+        f"{kcal(ctx.catalog.food(i.food_code).nutrient('energy_kcal', i.grams))} kcal"
+        f"{ctx.t('chat.from_label') if ctx.catalog.food(i.food_code).user_provided else ''}"
+        for i in new_items) + ". "
+    all_snacks = [*existing_snacks, *new_items]
+
+    absorb = ctx.plan_fn(day, required, all_snacks, None, None)
+    if fits(absorb):
+        cheat_note = [ctx.t("chat.no_cheat_needed")] if parsed.cheat_day else []
+        lines = [head + ctx.t("chat.absorbed", day=_day_name(day, ctx), kcal=kcal(target)),
+                 *_plan_lines(absorb, ctx), _totals_line(absorb, target, ctx),
+                 *_shortfall_lines(absorb, ctx), *cheat_note, *notes]
+        if refusal_text:
+            lines.append(refusal_text)
+        return ChatReply(kind="proposal", detected=detected, text="\n".join(lines), proposals=[
+            Proposal(key="absorb", label=ctx.t("chat.label.apply"), day=day, plan=absorb,
+                     snacks=snack_dicts(new_items))])
+
+    proposals: list[Proposal] = []
+    lines = [head + ctx.t("chat.too_much", day=_day_name(day, ctx), kcal=kcal(target))]
+    # Phương án 1: ăn ít hơn — thu nhỏ các món vừa thêm theo tỉ lệ, kiểm chứng bằng planner (tối đa 4 lần giải)
+    for factor in (0.75, 0.5, 0.33, 0.25):
+        smaller = []
+        for i in new_items:
+            st = ctx.catalog.food(i.food_code).step_g
+            g = int(i.grams * factor // st * st)
+            if g >= st:
+                smaller.append(i.model_copy(update={"grams": g}))
+        if not smaller:
+            break
+        alt = ctx.plan_fn(day, required, [*existing_snacks, *smaller], None, None)
+        if fits(alt):
+            desc = ", ".join(f"{int(i.grams)} g {ctx.inline(ctx.food_name(i.food_code))}" for i in smaller)
+            proposals.append(Proposal(key="smaller_portion", day=day, plan=alt, snacks=snack_dicts(smaller),
+                                      label=ctx.t("chat.label.smaller", desc=desc, kcal=kcal(snack_kcal(smaller)))))
+            break
+
+    # Phương án 2: cheat day — bữa chính vẫn đủ, phần vượt bù có giới hạn vào các ngày sau
+    e_cheat = cheat_day_energy(target, snack_kcal(all_snacks))
+    cheat_plan = ctx.plan_fn(day, required, all_snacks, e_cheat, MEAL_FLOOR_SHARE * target)
+    overflow = max(cheat_plan.totals.get("energy_kcal", 0.0) - target, 0.0)
+    no_comp = ctx.ed_flagged or would_flag(ctx.safety_events, "COMPENSATION", ctx.now)
+    if no_comp:
+        comp = None
+        cheat_label = ctx.t("chat.label.cheat_no_comp", kcal=kcal(overflow))
+    else:
+        nxt = [DayEnergy(day=day + timedelta(days=i), target_kcal=ctx.energy_target(day + timedelta(days=i)),
+                         floor_kcal=ctx.energy_floor) for i in range(1, MAX_DAYS + 1)]
+        comp = plan_compensation(overflow, nxt)
+        spread = ", ".join(f"{r.day.strftime(ctx.t('chat.date_fmt'))} −{kcal(r.kcal)}" for r in comp.reductions)
+        forgiven = ctx.t("chat.forgiven", kcal=kcal(comp.forgiven_kcal)) if comp.forgiven_kcal >= 5 else ""
+        cheat_label = ctx.t("chat.label.cheat", kcal=kcal(overflow), spread=spread or ctx.t("chat.none"),
+                            forgiven=forgiven)
+    proposals.append(Proposal(key="cheat_day", label=cheat_label, day=day, plan=cheat_plan, compensation=comp,
+                              snacks=snack_dicts(new_items),
+                              records_compensation_event=comp is not None and bool(comp.reductions)))
+    lines += [ctx.t("chat.cheat_head", pct=int(MEAL_FLOOR_SHARE * 100)), *_plan_lines(cheat_plan, ctx)]
+    lines.append(ctx.t(SUPPORT_KEY) if no_comp else ctx.t("chat.comp_note"))
+    lines += notes
+    if refusal_text:
+        lines.append(refusal_text)
+    return ChatReply(kind="warning", detected=detected, text="\n".join(x for x in lines if x), proposals=proposals)
+
+
+def _day_name(day: date, ctx: ChatContext) -> str:
+    delta = (day - ctx.now.date()).days
+    if delta in (0, 1):
+        return ctx.t("chat.day.today" if delta == 0 else "chat.day.tomorrow")
+    return ctx.t("chat.day.date", date=day.strftime(ctx.t("chat.date_fmt")))
+
+
+def _totals_line(plan: DayPlan, target: float, ctx: ChatContext) -> str:
+    t = plan.totals
+    return ctx.t("chat.totals", kcal=kcal(t.get("energy_kcal", 0)), target=kcal(target),
+                 protein=round(t.get("protein_g", 0)), carb=round(t.get("carb_g", 0)), fat=round(t.get("fat_g", 0)))
+
+
+def _shortfall_lines(plan: DayPlan, ctx: ChatContext) -> list[str]:
+    out = []
+    for d in plan.deviations:
+        if d.within:
+            continue
+        what = Msg(f"nutrient.{d.code}")
+        if d.actual < d.target:
+            sugg = next((s for s in plan.suggestions if s.nutrient == d.code), None)
+            foods = ", ".join(ctx.inline(ctx.food_name(c)) for c in sugg.food_codes) if sugg else ""
+            add = ctx.t("chat.short.add", foods=foods) if sugg else ""
+            out.append(ctx.t("chat.short.below", what=what, pct=round(abs(d.pct) * 100), add=add))
+        else:
+            out.append(ctx.t("chat.short.above", what=what, pct=round(d.pct * 100)))
+    return out

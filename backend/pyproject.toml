@@ -1,0 +1,43 @@
+[project]
+name = "homnayangi-backend"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "email-validator>=2.1",
+    "sqlalchemy>=2.0.30",
+    "alembic>=1.13",
+    "psycopg[binary]>=3.1",
+    "pulp>=2.8,<4",  # PuLP 4.0 xóa LpVariable(...) trực tiếp và PULP_CBC_CMD
+    "pyjwt>=2.8",
+    "argon2-cffi>=23.1",
+    "cryptography>=42",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.5"]
+# Provider ẩn (LLM_EXPERIMENTAL_PROVIDERS=true, LLM_PROVIDER=anthropic)
+claude = ["anthropic>=1.0"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+# Chỉ tắt 2 cảnh báo PuLP 4.0 đã biết (đã pin pulp<4); các cảnh báo khác vẫn hiện.
+filterwarnings = [
+    "ignore:Constructing LpVariable\\(name, \\.\\.\\.\\) directly is deprecated:DeprecationWarning",
+    "ignore:PULP_CBC_CMD is deprecated:DeprecationWarning",
+]
+
+[tool.ruff]
+line-length = 120
