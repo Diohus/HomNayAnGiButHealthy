@@ -7,6 +7,7 @@ import { MealCard } from "../components/MealCard";
 import { Notices } from "../components/Notices";
 import { addDays, isoDay } from "../format";
 import { errorMessage, fmt, useI18n } from "../i18n";
+import { ViewSwitch } from "./Week";
 
 export function TodayPage() {
   const [day, setDay] = useState(isoDay(new Date()));
@@ -39,6 +40,7 @@ export function TodayPage() {
 
   return (
     <main>
+      <ViewSwitch />
       <div className="daynav">
         <button className="secondary" onClick={() => setDay(addDays(day, -1))} aria-label={t.today.prevDay}>‹</button>
         <h2>{day === isoDay(new Date()) ? t.today.today : fmtDate(day)}</h2>

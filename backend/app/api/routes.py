@@ -3,6 +3,7 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Literal
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
@@ -28,13 +29,16 @@ from app.guardrails.medical import menu_notices
 from app.nutrition import HealthLimits, HealthProfileIn
 from app.nutrition.schemas import Condition
 from app.services import chat as CS
+from app.services import export as EX
 from app.services import foods as FS
 from app.services import intake as IN
 from app.services import limits_extract as LX
+from app.services import meal_photo as PH
 from app.services import menu as MS
 from app.services import preferences as PREF
 from app.services import profile as P
 from app.services import shopping as SH
+from app.services import summary as SUM
 
 router = APIRouter(prefix="/api")
 LANG = Depends(get_lang)  # ngôn ngữ phản hồi theo Accept-Language (singleton để tránh B008)
@@ -125,6 +129,23 @@ def delete_me(uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_s
     """Xóa toàn bộ dữ liệu của người dùng (cascade mọi bảng)."""
     s.execute(delete(M.User).where(M.User.id == uid))
     s.commit()
+
+
+class PasswordIn(BaseModel):
+    password: str = Field(min_length=1, max_length=200)
+
+
+@router.post("/me/export")
+def export_me(body: PasswordIn, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session)):
+    """Tải toàn bộ dữ liệu của tôi (JSON). Phải nhập lại mật khẩu; không chứa hash mật khẩu/refresh token."""
+    limiter.hit(f"export:{uid}", *RL.EXPORT)
+    u = s.get(M.User, uid)
+    if u is None or not verify_password(body.password, u.password_hash):
+        raise AppError(401, "BAD_PASSWORD")
+    data = EX.export(s, uid)
+    name = f"homnayangi-data-{datetime.now(UTC).date().isoformat()}.json"
+    return JSONResponse(data, headers={"Content-Disposition": f'attachment; filename="{name}"',
+                                       "Cache-Control": "no-store"})
 
 
 # ---------------- hồ sơ & nhu cầu ----------------
@@ -301,6 +322,13 @@ class IntakeIn(BaseModel):
     grams: float
 
 
+@router.get("/summary/week")
+def summary_week(end: date, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session),
+                 lang: Lang = LANG):
+    """7 ngày kết thúc ở `end`: mục tiêu / kế hoạch / đã ăn mỗi ngày, trung bình, chất hay thiếu kèm gợi ý."""
+    return SUM.week(s, uid, end, lang)
+
+
 @router.get("/intake")
 def get_intake(day: date, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session)):
     c = MS.Ctx(s, uid)
@@ -310,6 +338,43 @@ def get_intake(day: date, uid: uuid.UUID = Depends(current_user), s: Session = D
 @router.post("/intake", status_code=201)
 def add_intake(body: IntakeIn, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session)):
     return {"id": IN.add_entry(s, uid, body.day, body.slot, body.food_code, body.grams, "manual")}
+
+
+_PHOTO_FILE = File(...)
+_PHOTO_DAY = Form(...)
+_PHOTO_SLOT = Form(None)
+
+
+@router.post("/intake/photo")
+def intake_photo(file: UploadFile = _PHOTO_FILE, day: date = _PHOTO_DAY,
+                 slot: Literal["breakfast", "lunch", "dinner", "snack"] | None = _PHOTO_SLOT,
+                 consent_ai_processing: bool = _CONSENT, uid: uuid.UUID = Depends(current_user),
+                 s: Session = Depends(get_session), lang: Lang = LANG):
+    """Ảnh bữa ăn ⇒ BẢN NHÁP nhật ký (không lưu ảnh, không ghi DB). Người dùng sửa rồi POST /intake/batch."""
+    if not consent_ai_processing:
+        raise AppError(422, "AI_CONSENT_REQUIRED")
+    image_b64 = LX.prepare_image(file.file.read(LX.MAX_IMAGE_BYTES + 1))  # ảnh hỏng không tốn lượt
+    limiter.hit(f"photo:{uid}", *RL.PHOTO)
+    settings = get_settings()
+    draft = PH.analyze(s, uid, get_provider(settings), image_b64, lang, settings.llm_max_retries)
+    return {**draft, "day": day.isoformat(), "slot": slot or PH.guess_slot(datetime.now())}
+
+
+class BatchEntry(BaseModel):
+    slot: Literal["breakfast", "lunch", "dinner", "snack"]
+    food_code: str = Field(min_length=1, max_length=64)
+    grams: float
+    source: Literal["ai_estimate", "manual"] = "manual"
+
+
+class BatchIn(BaseModel):
+    day: date
+    entries: list[BatchEntry]
+
+
+@router.post("/intake/batch", status_code=201)
+def add_intake_batch(body: BatchIn, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session)):
+    return {"ids": PH.add_batch(s, uid, body.day, [e.model_dump() for e in body.entries])}
 
 
 @router.delete("/intake/{entry_id}", status_code=204)

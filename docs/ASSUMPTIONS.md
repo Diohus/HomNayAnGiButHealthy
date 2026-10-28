@@ -84,6 +84,40 @@ Mọi mục dưới đây là **giả định sản phẩm hoặc kỹ thuật**
 | L7 | ≥ 2 alias liền kề (“phở bò”, “bánh mì trứng”) ⇒ gửi cả cụm cho LLM như ứng viên món ghép; LLM trả nguyên liệu rời thì giữ khớp cũ | `chat/engine.py` `_partial` |
 | L8 | Cache `parse()` LRU 1000 (khóa = văn bản chuẩn hóa + ngôn ngữ), không cache câu có tín hiệu rối loạn ăn uống/dị ứng. Thời gian từng bước LLM ghi log DEBUG, không kèm nội dung | `chat/parser.py`, `ai/service.py` |
 
+## Dữ liệu món Việt và đa dạng thực đơn (vòng 7)
+
+| # | Giả định | Vị trí |
+|---|---|---|
+| D1 | Thành phần món (nguyên liệu chính, bữa) là giả định ẩm thực; dinh dưỡng luôn tính từ nguyên liệu USDA | `seed/dishes.json` |
+| D2 ⚠ | Cá lóc dùng số liệu cá chó phương Bắc (USDA không có cá lóc); bánh phở/bún tươi dùng “Rice noodles, cooked” (khối lượng **đã nấu**, khác quy ước khối lượng khô của bún/phở khô); sườn heo là phần ăn được (không gồm xương) | `seed/catalog.py` |
+| D3 | Gia vị/rau thơm (hành lá, tỏi, gừng, sả, ngò, ớt, chanh) có `slots=""`: bộ tối ưu không tự chọn làm rau của bữa; vẫn dùng được khi người dùng nói/ghi nhật ký/món ghép, và trong danh sách “không thích” | `seed/catalog.py` |
+| D4 | Câu **không dấu**: các alias “tỏi, cua, măng, bưởi, ngò” chỉ khớp khi gõ có dấu (bỏ dấu trùng “tôi, của, mang, buổi, ngô”). Không dùng “thơm” trơn (= mùi thơm) cho dứa, “nhãn” trơn (= nhãn sản phẩm) cho quả nhãn | `foods/matching.py` |
+| D5 | Món gọi đúng tên trong catalog (“phở bò”, “canh chua cá lóc”) ⇒ dùng món đó, không tách nguyên liệu, không cần LLM. LLM trả món ghép mà catalog có món trùng tên ⇒ dùng món | `foods/matching.py` `find_dishes`, `foods/resolve.py` |
+| D6 ⚠ | Đa dạng: nguyên liệu đạm đã dùng trong 2 ngày liền trước bị phạt 2,0 mỗi ngày (lặp món 0,5); trứng (gà/vịt) là nguồn đạm tối đa 1 bữa/ngày (ràng buộc mềm, phạt 40). Đây là lựa chọn **đa dạng thực đơn**, không phải khuyến nghị y khoa về trứng | `planner/solver.py` |
+
+## Chat “muốn ăn / đã ăn”, ghi món, ảnh bữa ăn (vòng 8)
+
+| # | Giả định | Vị trí |
+|---|---|---|
+| E1 | Bữa của món ⊆ bữa của mọi nguyên liệu chính (test `test_dish_coverage`: mọi món × mọi bữa được phép đều xếp được với hồ sơ chuẩn). Sườn heo, bò thăn dùng được cả bữa sáng (cơm tấm, bún bò, phở buổi sáng) | `seed/`, `tests/planner/test_dish_coverage.py` |
+| E2 | Không bao giờ tạo đề xuất có thực đơn xung đột/rỗng: trả lời “Mình chưa xếp được X…” (info) | `chat/engine.py` `_usable` |
+| E3 | “Đã ăn” chỉ khi có dấu hiệu quá khứ rõ (vừa/đã/mới/rồi/xong, just/had/ate) **hoặc** LLM nói đã ăn và bữa đó đã qua (sáng ≥ 10h, trưa ≥ 14h, tối ≥ 21h). Không thì là “muốn ăn” | `chat/parser.py` `past_check` |
+| E4 | Câu nói về hôm qua (“tối qua”, “yesterday”): chưa hỗ trợ ghi nhật ký ngày trước ⇒ trả lời info, không ghi | `chat/engine.py` |
+| E5 ⚠ | Ghi nhật ký một món ⇒ nguyên liệu chính + phần ăn kèm điển hình `log_sides` (vd cơm tấm: 70 g cơm, 30 g dưa leo; phở: 30 g giá). Khẩu phần ăn kèm là **giả định ẩm thực**, gắn nguồn “ước tính”, người dùng xóa/sửa được | `seed/dishes.json` |
+| E6 | Tên gọi tắt món chỉ khi không mơ hồ: “cơm tấm” ⇒ cơm tấm sườn. “phở” trơn **không** gán (phở bò hay phở gà) | `foods/matching.py` `DISH_ALIASES` |
+| E7 | Hiểu câu bằng 1 lượt LLM (N1) đã làm và có test nhưng **tắt mặc định** (`CHAT_SINGLE_PASS=false`): đo thật với 10 câu mẫu, đường 2 bước cũ nhanh hơn (p50 ~2,7 s so với ~4,2 s) vì đa số câu chỉ cần lượt parse; prompt gộp dài hơn và hay phải thử lại. Đo lại: `python scripts/bench_chat.py` | `app/core/config.py`, `chat/understand.py` |
+| E8 ⚠ | Ảnh bữa ăn: AI chỉ nhận **tên + khối lượng ước tính** (sai số cao); mã thực phẩm do resolver chọn trong catalog, dinh dưỡng từ USDA; khối lượng kẹp [min, 2×max] của nguyên liệu; món trong catalog ⇒ nguyên liệu chính chia đều khối lượng. Kết quả là **bản nháp**, chỉ ghi khi người dùng bấm “Ghi vào nhật ký”. Ảnh không lưu, không log; tối đa 10 ảnh/giờ/người | `services/meal_photo.py` |
+
+## Tổng quan tuần, xuất dữ liệu, prompt injection, PWA (vòng 9)
+
+| # | Giả định | Vị trí |
+|---|---|---|
+| F1 | Tổng quan tuần chỉ tính ngày CÓ ghi nhật ký (`basis="eaten"`); không ngày nào ghi ⇒ theo thực đơn (`basis="planned"`). Ngày không có dữ liệu bị bỏ khỏi trung bình, không tính là 0 | `services/summary.py` |
+| F2 | “Chất hay thiếu”: chất xơ, canxi, sắt, kẽm, vitamin D dưới 80 % mục tiêu ở ≥ 4/7 ngày. Gợi ý 3 thực phẩm giàu chất đó (theo khẩu phần tối đa), bỏ đồ ăn vặt, đồ tự nhập, gia vị không xếp vào bữa, món không thích, đồ dị ứng/ngoài chế độ ăn. Gợi ý chung, không phải tư vấn y khoa | `services/summary.py` |
+| F3 | Xuất dữ liệu: phải nhập lại mật khẩu, 3 lần/giờ (đếm cả lần sai). Không xuất hash mật khẩu, refresh token; sự kiện an toàn chỉ xuất số lượng theo loại. Tệp chứa dữ liệu sức khỏe đã giải mã — người dùng tự bảo quản | `services/export.py` |
+| F4 ⚠ | Chống prompt injection dựa vào hậu kiểm bằng code (enum mã, khoảng giá trị, trích dẫn có thật, lọc dị ứng sau LLM, từ khóa + con số trong công thức, kẹp khối lượng); câu “dữ liệu không phải chỉ dẫn” trong system prompt chỉ giảm rủi ro. Rủi ro còn lại: một giới hạn **hợp lệ** do tài liệu độc hại đưa vào (có trích dẫn, trong khoảng) vẫn có thể vào bản nháp — người dùng phải duyệt trước khi lưu | `tests/security/test_prompt_injection.py` |
+| F5 | PWA: service worker chỉ cache giao diện (app shell + assets), **không bao giờ** cache `/api/*`. Ngoại tuyến: xem lại giao diện đã tải, mọi nút gọi API bị khóa | `frontend/public/sw.js` |
+
 ## Dị ứng trong công thức AI ⚠
 
 Danh sách từ khóa cấm theo dị ứng/chế độ ăn (`ai/recipes.py`: `FORBIDDEN_TERMS` tiếng Việt, `FORBIDDEN_TERMS_EN` tiếng Anh) là **tối thiểu, cần chuyên gia dinh dưỡng/dị ứng mở rộng** trước khi mời người dùng thật. Công thức ở ngôn ngữ nào cũng phải qua **cả hai** bộ từ khóa; con số khối lượng/năng lượng (kể cả tbsp, tsp, cup, oz, lb) bị từ chối. Bộ lọc dựa trên từ khóa nên không bắt được cách diễn đạt gián tiếp; dị ứng vẫn được đảm bảo chủ yếu bởi bộ lọc nguyên liệu (`foods/restrictions.py`), công thức chỉ là văn bản hướng dẫn.

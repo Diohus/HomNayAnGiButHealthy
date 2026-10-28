@@ -99,7 +99,7 @@ hoặc `pip install truststore` rồi gọi `truststore.inject_into_ssl()` trư�
 ## Test
 
 ```bash
-cd backend && pytest            # 288 test: nutrition, foods, planner, chat, guardrails (mục 3), robustness (mục 4), API
+cd backend && pytest            # 493 test (gồm 133 test chậm `-m slow`): nutrition, foods, planner, chat, guardrails (mục 3), robustness (mục 4), API
 cd frontend && npm test && npm run typecheck
 ```
 

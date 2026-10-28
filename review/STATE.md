@@ -18,9 +18,13 @@
 | Brainstorm v2 (`review/brainstorm-v2.md`) | ✅ |
 | Vòng 4 — giới hạn sức khỏe tự cung cấp + trích xuất ảnh/văn bản | ✅ nghiệm thu (221 test, E2E ảnh/văn bản OK) |
 | Vòng 5 — hiểu món bằng LLM + đổi món/không thích (`review/round-5.md`) | ✅ nghiệm thu (264 test, E2E 9 câu + swap OK) |
-| Vòng 6 — nhật ký đã ăn + danh sách đi chợ + sửa nhỏ (`review/round-6.md`) | ⏳ đã giao dev |
-| report-v2.md + commit/push | chưa |
-| Brainstorm v3, vòng 7–9, report-v3.md + commit/push | chưa |
+| Vòng 6 — nhật ký đã ăn + danh sách đi chợ + sửa nhỏ (`review/round-6.md`) | ✅ nghiệm thu (288 test, E2E OK) |
+| report-v2.md + commit/push | ✅ commit 0625404 |
+| Brainstorm v3 (`review/brainstorm-v3.md`) | ✅ |
+| Vòng 7 — dữ liệu món Việt + đa dạng + dọn cảnh báo (`review/round-7.md`) | ✅ nghiệm thu (310 test, USDA 5/5 khớp, đa dạng 7 ngày OK) |
+| Vòng 8 — sửa bún chả/proposal rỗng + chat 1 lượt LLM + ảnh bữa ăn (`review/round-8.md`) | ✅ nghiệm thu (474 test; N1 giữ tắt theo số đo) |
+| Vòng 9 — tổng quan tuần + xuất dữ liệu/chống injection + PWA (`review/round-9.md`) | ✅ nghiệm thu (493 test) |
+| report-v3.md + commit/push | ✅ |
 
 ## Cách tiếp tục
 Đọc bảng trên ⇒ hỏi dev (SendMessage) đang ở đâu ⇒ nghiệm thu bằng cách tự chạy test + E2E ⇒ giao bước tiếp theo. Mỗi chu kỳ xong thì commit + push lên nhánh `feat/mvp-review-v1`.

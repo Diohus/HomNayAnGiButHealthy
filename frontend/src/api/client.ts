@@ -109,8 +109,8 @@ export async function api<T>(path: string, init: RequestInit = {}, retry = true)
   return body as T;
 }
 
-export const post = <T>(path: string, data?: unknown) =>
-  api<T>(path, { method: "POST", body: data === undefined ? undefined : JSON.stringify(data) });
+export const post = <T>(path: string, data?: unknown, init: RequestInit = {}) =>
+  api<T>(path, { ...init, method: "POST", body: data === undefined ? undefined : JSON.stringify(data) });
 export const postForm = <T>(path: string, form: FormData) => api<T>(path, { method: "POST", body: form });
 export const put = <T>(path: string, data: unknown) => api<T>(path, { method: "PUT", body: JSON.stringify(data) });
 export const del = <T>(path: string) => api<T>(path, { method: "DELETE" });

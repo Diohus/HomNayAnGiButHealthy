@@ -171,7 +171,7 @@ def test_chat_resolved_param(client, auth, monkeypatch):
     # LLM tắt trong test: lựa chọn của người dùng vẫn được dùng (mã phải có trong catalog)
     from app.chat.schemas import ParsedIntent
 
-    monkeypatch.setattr("app.services.chat.parse", lambda text, provider, retries, lang="vi": (ParsedIntent(
+    monkeypatch.setattr("app.services.chat.parse", lambda text, provider, retries, lang="vi", now=None: (ParsedIntent(
         intent="want_food", mentions=["thịt"], quantity_value=None, quantity_unit=None, slot=None, day=None,
         cheat_day=False), "llm"))
     r = client.post("/api/chat", json={"message": "tôi muốn ăn thịt", "resolved": {"thịt": "food:beef_lean"}},

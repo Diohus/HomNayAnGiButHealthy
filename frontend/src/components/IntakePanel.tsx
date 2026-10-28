@@ -4,6 +4,7 @@ import { useFoodNames, useFoods } from "../api/hooks";
 import { fmtGrams, foldText } from "../format";
 import { errorMessage, fmt, useI18n } from "../i18n";
 import type { MenuDay } from "../types";
+import { PhotoIntake } from "./PhotoIntake";
 
 const SLOTS = ["breakfast", "lunch", "dinner", "snack"];
 
@@ -65,7 +66,8 @@ export function IntakePanel({ md, day, busy, onChanged, onRebalance }: {
         {offPlan.map((e) => (
           <li key={e.id}>
             <span>{name(e.food_code)} <span className="small muted">· {t.slots[e.slot] ?? e.slot}</span>
-              {e.source === "ai_estimate" && <span className="tag">{t.today.tags.aiEstimate}</span>}</span>
+              {e.source === "ai_estimate" && <span className="tag">{t.today.tags.aiEstimate}</span>}
+              {e.source === "estimate" && <span className="tag">{t.today.tags.estimate}</span>}</span>
             <span className="item-ctl">
               <span className="grams">{fmtGrams(e.grams)} g</span>
               <button className="link" aria-label={fmt(t.pantry.removeItem, { name: name(e.food_code) })}
@@ -106,7 +108,10 @@ export function IntakePanel({ md, day, busy, onChanged, onRebalance }: {
           <button type="button" className="link" onClick={() => setOpen(false)}>{t.limits.cancel}</button>
         </form>
       ) : (
-        <button className="secondary" onClick={() => setOpen(true)}>{t.intake.addOpen}</button>
+        <>
+          <button className="secondary" onClick={() => setOpen(true)}>{t.intake.addOpen}</button>{" "}
+          <PhotoIntake day={day} onSaved={onChanged} />
+        </>
       )}
       {showRebalance && (
         <div className="notice notice-warn">

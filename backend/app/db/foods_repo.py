@@ -30,6 +30,7 @@ def seed(session: Session) -> int:
     for d in json.loads((SEED_DIR / "dishes.json").read_text(encoding="utf-8")):
         dish = session.get(M.Dish, d["code"]) or M.Dish(code=d["code"])
         dish.name_vi, dish.name_en, dish.slots = d["name_vi"], d.get("name_en"), d["slots"]
+        dish.log_sides = d.get("log_sides") or []
         dish.components = [M.DishComponent(ingredient_code=c, role="main") for c in d["main"]]
         session.add(dish)
     session.commit()
@@ -57,7 +58,7 @@ def global_catalog(session: Session) -> FoodCatalog:
         dishes = session.scalars(select(M.Dish)).all()
         _cache["global"] = FoodCatalog(
             [_to_food(i) for i in ings],
-            [Dish(code=d.code, name_vi=d.name_vi, name_en=d.name_en, slots=d.slots,
+            [Dish(code=d.code, name_vi=d.name_vi, name_en=d.name_en, slots=d.slots, log_sides=d.log_sides or [],
                   main=[c.ingredient_code for c in d.components])
              for d in dishes],
         )

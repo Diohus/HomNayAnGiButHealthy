@@ -4,14 +4,18 @@
 
 | Mục | Nguồn | Ghi chú |
 |---|---|---|
-| 61 nguyên liệu nấu ăn + 19 đồ ăn vặt | USDA FoodData Central, **SR Legacy (2018-04)**, public domain | Mỗi nguyên liệu có `fdc_id`, mô tả gốc USDA và URL kiểm chứng `https://fdc.nal.usda.gov/food-details/<fdc_id>/nutrients`. Số liệu được sinh tự động bằng `backend/seed/build_ingredients.py`. |
+| 94 nguyên liệu nấu ăn + 21 đồ ăn vặt | USDA FoodData Central, **SR Legacy (2018-04)**, public domain | Mỗi nguyên liệu có `fdc_id`, mô tả gốc USDA và URL kiểm chứng `https://fdc.nal.usda.gov/food-details/<fdc_id>/nutrients`. Số liệu được sinh tự động bằng `backend/seed/build_ingredients.py`. |
 | Khẩu phần đồ ăn vặt | USDA `food_portion.csv` (cùng bộ dữ liệu) | Build script kiểm tra khẩu phần có tồn tại trong USDA. |
 | Chỉ số đường huyết (GI) | Atkinson FS et al., *International tables of GI and GL values: 2008*, Diabetes Care 2008;31:2281-3 | **Chưa xác minh** (`gi_verified=false`): nhập theo bảng, chưa đối chiếu lại bản gốc. Chỉ dùng làm phạt mềm cho người tiểu đường. |
 | Nguyên liệu do người dùng nhập | Nhãn sản phẩm | Được đánh dấu “người dùng cung cấp”. Có kiểm tra năng lượng khớp với đạm/carb/béo (Atwater, sai lệch ≤ 20%). Không bao giờ được dùng làm gợi ý bổ sung chất. |
 
 Chỉ số USDA không có số liệu được lưu là `null` và hiển thị là “chưa xác minh”: fiber và vitamin D của tôm, kẽm của rau lang, vitamin D của một số bánh kẹo và nước cam. Hệ thống tính các chỉ số này bằng 0, nên có thể báo thiếu nhiều hơn thực tế.
 
-**Thay thế do USDA không có:** rau muống → rau lang (Sweet potato leaves); cá tra/basa → cá da trơn Mỹ (Channel catfish); bún/phở → Rice noodles, dry.
+**Thay thế do USDA không có:** rau muống → rau lang (Sweet potato leaves); cá tra/basa → cá da trơn Mỹ (Channel catfish); bún/phở → Rice noodles, dry; **cá lóc → cá chó phương Bắc (Fish, pike, northern, raw — cá nước ngọt, thịt trắng, ít béo)**; bánh phở/bún tươi → Rice noodles, cooked; nấm rơm → Mushrooms, straw, canned, drained solids.
+
+**Vòng 7 (+35 nguyên liệu, +39 món, tổng 65 món):** FDC ID được tra lại trong `food.csv` của chính bộ dữ liệu; mỗi mục trong `backend/seed/catalog.py` có comment là description gốc USDA. 80 nguyên liệu cũ được build lại từ cùng bộ CSV và **không đổi** (test so snapshot). **Đã bỏ qua vì SR Legacy không có tương đương tốt** (không dùng thực phẩm sai để lấp chỗ): rau muống (đã có thay thế rau lang), cải ngọt (choy sum), bạc hà/dọc mùng, bắp chuối, thanh long, chôm chôm (chỉ có loại đóng hộp ngâm siro), bánh tráng, hủ tiếu dạng bánh gạo (USDA chỉ có bánh gạo phồng — giữ alias “hủ tiếu” cho bún/phở khô), cá cơm khô (chỉ có cá cơm tươi/đóng hộp dầu — đã thêm cá cơm tươi), chè đậu, bánh mì Việt (đã có “Bánh mì” = French bread).
+
+**Món ăn:** thành phần món (nguyên liệu chính `main`, bữa phù hợp) là **giả định ẩm thực** do nhóm phát triển khai báo, không phải số liệu dinh dưỡng; số liệu luôn tính từ từng nguyên liệu USDA.
 
 **Chưa dùng** Bảng thành phần thực phẩm Việt Nam (Viện Dinh dưỡng). Bảng này không có API công khai, và việc dùng cần xem xét bản quyền.
 

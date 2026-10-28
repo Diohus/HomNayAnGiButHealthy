@@ -129,7 +129,7 @@ def test_notices_and_needs_bilingual(client):
 
 def test_dishes_have_english_names(client, auth):
     dishes = client.get("/api/dishes", headers=auth).json()
-    assert len(dishes) == 26 and all(d["name_en"] and not VI_CHARS.search(d["name_en"]) for d in dishes)
+    assert len(dishes) >= 65 and all(d["name_en"] and not VI_CHARS.search(d["name_en"]) for d in dishes)
     assert next(d for d in dishes if d["code"] == "ca_hoi_ap_chao")["name_en"] == "Pan-seared salmon"
 
 

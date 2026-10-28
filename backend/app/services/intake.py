@@ -27,7 +27,7 @@ from app.services import menu as MS
 from app.services import profile as P
 
 SLOTS = ("breakfast", "lunch", "dinner", "snack")
-SOURCES = ("plan", "chat", "manual", "ai_estimate")
+SOURCES = ("plan", "chat", "manual", "ai_estimate", "estimate")  # estimate: khẩu phần điển hình của món
 
 
 def entries(s: Session, user_id: uuid.UUID, day: date) -> list[M.IntakeEntry]:
@@ -99,11 +99,28 @@ def delete_entry(s: Session, user_id: uuid.UUID, entry_id: int) -> None:
 
 
 def rebalance(s: Session, user_id: uuid.UUID, day: date) -> DayPlan:
+    report, targets = compute_rebalance(s, user_id, day)
+    MS.save_plan(s, user_id, report, targets)
+    s.commit()
+    return report
+
+
+def preview_rebalance(s: Session, user_id: uuid.UUID, day: date, extra: list[dict]) -> DayPlan | None:
+    """Xem trước (KHÔNG lưu) thực đơn sau khi cân lại, coi `extra` (món sắp ghi nhật ký) như đã ăn ngoài kế hoạch.
+    Không cân lại được (chưa có thực đơn, đã ăn hết, guardrail rối loạn ăn uống…) ⇒ None."""
+    try:
+        return compute_rebalance(s, user_id, day, extra)[0]
+    except AppError:
+        return None
+
+
+def compute_rebalance(s: Session, user_id: uuid.UUID, day: date, extra: list[dict] = ()) -> tuple[DayPlan, list]:
     c = MS.Ctx(s, user_id)
     md = MS.get_day(s, user_id, day)
     if md is None:
         raise AppError(404, "MENU_NOT_FOUND")
-    rows = entries(s, user_id, day)
+    rows = entries(s, user_id, day) + [M.IntakeEntry(slot=e["slot"], food_code=e["food_code"], grams=e["grams"],
+                                                     source=e.get("source", "chat")) for e in extra]
     eaten = set(eaten_slots(rows))
     current = MS.to_plan(md, c.catalog, c.tol)
     main_slots = [m.slot for m in current.meals if m.slot != "snack"]
@@ -167,6 +184,4 @@ def rebalance(s: Session, user_id: uuid.UUID, day: date) -> DayPlan:
     if total > target * (1 + c.tol):
         report.warnings.append(f"OVER_TARGET:{round((total - target) / 10) * 10}")
     report.meals = meals
-    MS.save_plan(s, user_id, report, targets)
-    s.commit()
-    return report
+    return report, targets

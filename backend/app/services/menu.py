@@ -95,7 +95,7 @@ def save_plan(s: Session, user_id: uuid.UUID, plan: DayPlan, targets) -> M.MenuD
         if row is None:
             row = M.Meal(slot=mp.slot)
             md.meals.append(row)
-        changed = row.dish_code != mp.dish_code or sorted((i.ingredient_code for i in row.items)) != sorted(
+        changed = row.dish_code != mp.dish_code or sorted(i.ingredient_code for i in row.items) != sorted(
             i.food_code for i in mp.items)
         row.active, row.dish_code = True, mp.dish_code
         row.items = [M.MealItem(ingredient_code=i.food_code, grams=i.grams, locked=i.locked, origin=i.origin)
@@ -154,7 +154,22 @@ class Ctx:
                 recent[dish] = recent.get(dish, 0) + 1
         return recent
 
+    def recent_foods(self, day: date) -> dict[str, int]:
+        """Nguyên liệu protein đã dùng trong 2 ngày liền trước (đếm số ngày) — để phạt lặp nguồn đạm."""
+        out: dict[str, int] = {}
+        for d in (day - timedelta(days=1), day - timedelta(days=2)):
+            md = get_day(self.s, self.user_id, d)
+            if md is None:
+                continue
+            used = {i.ingredient_code for m in md.meals if m.active and m.slot != "snack" for i in m.items
+                    if i.ingredient_code in self.catalog.foods and self.catalog.food(i.ingredient_code).category
+                    == "protein"}
+            for c in used:
+                out[c] = out.get(c, 0) + 1
+        return out
+
     def request(self, day: date, targets, locked: list[LockedItem], forbidden: set[str], **kw) -> PlanRequest:
+        kw.setdefault("recent_foods", self.recent_foods(day))
         return PlanRequest(
             day=day, slots=self.needs.meal_slots, targets=targets, tolerance=self.tol, forbidden_dishes=forbidden,
             locked=locked, prefer_low_gi=bool(set(self.profile.conditions) & DIABETES),
@@ -231,6 +246,9 @@ def swap(s: Session, user_id: uuid.UUID, day: date, slot: str) -> DayPlan:
                     frozen_slots={m.slot for m in others})
     plan = solve_day(req, c.catalog)
     new = next((m for m in plan.meals if m.slot == slot), None)
+    if new is None or not new.dish_code:  # nhóm món ngẫu nhiên không hợp ⇒ thử lại với mọi món được phép
+        plan = solve_day(req.model_copy(update={"dish_pool": len(c.catalog.dishes)}), c.catalog)
+        new = next((m for m in plan.meals if m.slot == slot), None)
     if new is None or not new.dish_code or new.dish_code == row.dish_code:
         raise AppError(409, "NO_ALTERNATIVE")
     order = {m.slot: i for i, m in enumerate(current.meals)}

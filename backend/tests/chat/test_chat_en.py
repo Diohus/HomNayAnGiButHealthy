@@ -118,7 +118,7 @@ def test_vietnamese_names_still_lowercase_in_sentences(make_ctx):
 
 
 def test_every_ingredient_has_display_en(catalog):
-    assert len(catalog.foods) == 80
+    assert len(catalog.foods) >= 115
     for f in catalog.foods.values():
         assert f.display_en and "," not in f.display_en and not VI_CHARS.search(f.display_en), f.code
 

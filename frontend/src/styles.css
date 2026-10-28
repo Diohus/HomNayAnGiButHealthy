@@ -47,6 +47,26 @@ label { display: block; margin-bottom: 10px; font-size: .9rem; }
 fieldset { border: 0; padding: 0; margin: 0 0 10px; }
 legend { font-size: .9rem; margin-bottom: 6px; }
 .check { display: flex; gap: 8px; align-items: center; }
+.item-ctl input[type=number] { width: 5.5em; }
+/* Tuần (P1): biểu đồ SVG thuần, màu theo token ⇒ đúng ở cả sáng/tối */
+.view-switch { display: flex; gap: 6px; margin-bottom: 8px; }
+.view-switch a { flex: 1; text-align: center; padding: 6px 10px; border: 1px solid var(--line); border-radius: 10px; color: var(--muted); text-decoration: none; font-size: .9rem; }
+.view-switch a.active { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.week-chart { width: 100%; height: auto; display: block; }
+.chart-bar { fill: var(--accent); }
+.chart-empty { fill: var(--line); }
+.chart-target { stroke: var(--warn); stroke-width: 2; stroke-dasharray: 4 3; }
+.chart-label { fill: var(--muted); font-size: 11px; }
+.legend { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.swatch { display: inline-block; width: 14px; height: 10px; border-radius: 2px; }
+.swatch.bar { background: var(--accent); }
+.swatch.target { height: 0; border-top: 2px dashed var(--warn); }
+ul.plain { list-style: none; padding: 0; margin: 8px 0 0; }
+ul.plain li { margin-bottom: 8px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+/* Ngoại tuyến (P4) */
+.offline-banner { position: sticky; top: 0; z-index: 5; margin: 0; padding: 8px 16px; text-align: center; font-size: .85rem; background: var(--warn-bg); color: var(--warn); border-bottom: 1px solid var(--warn); }
+.offline-guard { border: 0; margin: 0; padding: 0; min-width: 0; }
 .check input { width: auto; }
 .check.warn { color: var(--warn); }
 .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }

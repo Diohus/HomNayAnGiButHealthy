@@ -13,6 +13,20 @@ export interface MenuDay {
   energy_adjustment_kcal: number; notices: Notice[];
   intake: { entries: IntakeEntry[]; totals: Record<string, number> }; eaten_slots: string[];
 }
+export interface WeekDay {
+  day: string; target: Record<string, number>; planned: Record<string, number> | null;
+  eaten: Record<string, number> | null; logged: boolean;
+}
+export interface WeekSummary {
+  end: string; basis: "eaten" | "planned"; days: WeekDay[]; days_counted: number; average: Record<string, number>;
+  energy_within_days: number;
+  low_nutrients: { nutrient: string; days_low: number; suggestions: { food_code: string; name: string }[] }[];
+}
+export interface PhotoDraft {
+  entries: { food_code: string; name: string; grams: number; confidence: number; source: string; seen_as: string }[];
+  unresolved: string[]; rejected: { name: string; food_code: string; food: string; reason: string }[];
+  is_food_photo: boolean; day: string; slot: string;
+}
 export interface IntakeEntry { id: number; slot: string; food_code: string; grams: number; source: string }
 export interface ShoppingItem {
   code: string; name: string; grams: number; days_used: string[];

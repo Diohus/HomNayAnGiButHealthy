@@ -84,6 +84,41 @@ CATALOG: list[tuple] = [
     # --- Fat ---
     ("soybean_oil", "Dầu đậu nành", "Soybean oil", 171411, "fat", ["allergen:soy"], 0, 20, 5, None, "BLD"),
     ("olive_oil", "Dầu ô liu", "Olive oil", 171413, "fat", [], 0, 20, 5, None, "BLD"),
+    # --- Vòng 7: món Việt hằng ngày (FDC ID tra trong food.csv; comment = description USDA) ---
+    ("pork_belly", "Thịt ba chỉ heo", "Pork belly, raw", 167812, "protein", ["animal", "meat", "pork"], 50, 200, 10, None, "LD"),  # Pork, fresh, belly, raw
+    ("pork_ribs", "Sườn heo", "Pork spareribs, raw", 167853, "protein", ["animal", "meat", "pork"], 80, 250, 10, None, "BLD"),  # Pork, fresh, spareribs, separable lean and fat, raw
+    ("pork_ground", "Thịt heo xay", "Ground pork, raw", 167902, "protein", ["animal", "meat", "pork"], 50, 200, 10, None, "BLD"),  # Pork, fresh, ground, raw
+    ("chicken_whole", "Thịt gà (cả da)", "Chicken, meat and skin, raw", 171447, "protein", ["animal", "meat", "poultry"], 80, 250, 10, None, "BLD"),  # Chicken, broilers or fryers, meat and skin, raw
+    ("chicken_liver", "Gan gà", "Chicken liver, raw", 171060, "protein", ["animal", "meat", "poultry"], 30, 100, 10, None, "LD"),  # Chicken, liver, all classes, raw
+    ("beef_sirloin", "Thịt bò thăn", "Beef top sirloin steak, raw", 168726, "protein", ["animal", "meat", "beef"], 50, 200, 10, None, "BLD"),  # Beef, top sirloin, steak, separable lean and fat, trimmed to 1/8" fat, all grades, raw
+    ("crab", "Cua", "Blue crab, raw", 174204, "protein", ["animal", "shellfish", "allergen:shellfish"], 50, 200, 10, None, "LD"),  # Crustaceans, crab, blue, raw
+    ("clam", "Nghêu", "Clams, raw", 174214, "protein", ["animal", "shellfish", "allergen:shellfish"], 50, 250, 10, None, "LD"),  # Mollusks, clam, mixed species, raw
+    # Cá lóc (snakehead) KHÔNG có trong SR Legacy ⇒ dùng số liệu cá chó phương Bắc (cá nước ngọt, thịt trắng, ít béo) — GIẢ ĐỊNH
+    ("snakehead", "Cá lóc", "Northern pike, raw (used for snakehead)", 173680, "protein", ["animal", "fish", "allergen:fish"], 50, 250, 10, None, "LD"),  # Fish, pike, northern, raw
+    ("anchovy", "Cá cơm tươi", "European anchovy, raw", 174182, "protein", ["animal", "fish", "allergen:fish"], 30, 150, 10, None, "LD"),  # Fish, anchovy, european, raw
+    ("duck_egg", "Trứng vịt", "Duck egg", 172189, "protein", ["animal", "egg", "allergen:egg"], 70, 140, 70, None, "BLD"),  # Egg, duck, whole, fresh, raw
+    ("fried_tofu", "Đậu hũ chiên", "Fried tofu", 172451, "protein", ["allergen:soy"], 50, 200, 10, None, "BLD"),  # Tofu, fried
+    ("fresh_rice_noodles", "Bánh phở / bún tươi", "Rice noodles, cooked (fresh)", 168914, "carb", [], 100, 400, 10, None, "BLD"),  # Rice noodles, cooked
+    ("glutinous_rice", "Gạo nếp", "Glutinous rice, raw", 168883, "carb", [], 40, 150, 10, None, "BLD"),  # Rice, white, glutinous, unenriched, uncooked
+    ("onion", "Hành tây", "Onions, raw", 170000, "vegetable", [], 20, 150, 10, None, "LD"),  # Onions, raw
+    ("malabar_spinach", "Mồng tơi", "Malabar spinach (vine spinach)", 170474, "vegetable", [], 50, 250, 10, None, "LD"),  # Vinespinach, (basella), raw
+    ("bamboo_shoots", "Măng tươi", "Bamboo shoots, raw", 169210, "vegetable", [], 50, 200, 10, None, "LD"),  # Bamboo shoots, raw
+    ("straw_mushroom", "Nấm rơm", "Straw mushrooms, canned, drained", 168582, "vegetable", [], 50, 200, 10, None, "LD"),  # Mushrooms, straw, canned, drained solids
+    ("shiitake", "Nấm hương tươi", "Shiitake mushrooms, raw", 169242, "vegetable", [], 20, 100, 10, None, "LD"),  # Mushrooms, shiitake, raw
+    ("kohlrabi", "Su hào", "Kohlrabi, raw", 168424, "vegetable", [], 50, 250, 10, None, "LD"),  # Kohlrabi, raw
+    ("jicama", "Củ đậu (củ sắn)", "Jicama, raw", 170073, "vegetable", [], 50, 250, 10, None, "BLD"),  # Yambean (jicama), raw
+    ("lotus_root", "Củ sen", "Lotus root, raw", 169250, "vegetable", [], 50, 200, 10, None, "LD"),  # Lotus root, raw
+    ("scallion", "Hành lá", "Scallions, raw", 170005, "vegetable", [], 5, 50, 5, None, ""),  # Onions, spring or scallions (includes tops and bulb), raw
+    ("garlic", "Tỏi", "Garlic, raw", 169230, "vegetable", [], 5, 30, 5, None, ""),  # Garlic, raw
+    ("ginger", "Gừng", "Ginger root, raw", 169231, "vegetable", [], 5, 30, 5, None, ""),  # Ginger root, raw
+    ("lemongrass", "Sả", "Lemongrass, raw", 168573, "vegetable", [], 5, 30, 5, None, ""),  # Lemon grass (citronella), raw
+    ("coriander", "Ngò (rau mùi)", "Coriander (cilantro) leaves, raw", 169997, "vegetable", [], 5, 30, 5, None, ""),  # Coriander (cilantro) leaves, raw
+    ("chili", "Ớt", "Hot chili peppers, red, raw", 170106, "vegetable", [], 5, 30, 5, None, ""),  # Peppers, hot chili, red, raw
+    ("lime", "Chanh", "Limes, raw", 168155, "fruit", [], 5, 50, 5, None, ""),  # Limes, raw
+    ("pineapple", "Dứa (thơm, khóm)", "Pineapple, raw", 169124, "fruit", [], 80, 250, 10, None, "BLD"),  # Pineapple, raw, all varieties
+    ("longan", "Nhãn", "Longans, raw", 169089, "fruit", [], 50, 200, 10, None, "BLD"),  # Longans, raw
+    ("pomelo", "Bưởi", "Pomelo, raw", 167754, "fruit", [], 80, 250, 10, None, "BLD"),  # Pummelo, raw
+    ("jackfruit", "Mít", "Jackfruit, raw", 174687, "fruit", [], 50, 200, 10, None, "BLD"),  # Jackfruit, raw
 ]
 
 # --- Đồ ăn vặt (slot "S" = ngoài bữa chính; planner không tự chọn, chỉ dùng khi người dùng muốn ăn) ---
@@ -110,6 +145,8 @@ SNACKS: list[tuple] = [
     ("cheeseburger", "Hamburger phô mai", "Cheeseburger", 170690, ["animal", "meat", "beef", "dairy", "gluten", "allergen:gluten", "allergen:wheat", "allergen:milk", "allergen:sesame"], "1 sandwich", 91),
     ("banana_chips", "Chuối sấy", "Banana chips", 168849, [], "1 oz", 28.35),
     ("orange_drink", "Nước cam đóng hộp", "Orange juice drink", 169044, [], "1 cup", 249),
+    ("coconut_water", "Nước dừa", "Coconut water", 170174, [], "1 cup", 240),  # Nuts, coconut water (liquid from coconuts)
+    ("condensed_milk", "Sữa đặc có đường", "Sweetened condensed milk", 171275, ["animal", "dairy", "allergen:milk"], "1 fl oz", 38.2),  # Milk, canned, condensed, sweetened
 ]
 
 # Từ đồng nghĩa tiếng Việt cho chatbot (so khớp cụm dài nhất, không phân biệt dấu).
@@ -168,6 +205,42 @@ ALIASES: dict[str, list[str]] = {
     "cheeseburger": ["hamburger", "burger"],
     "banana_chips": ["chuối sấy"],
     "orange_drink": ["nước cam"],
+    # --- vòng 7 (gồm từ địa phương) ---
+    "pork_belly": ["ba chỉ", "thịt ba chỉ", "ba rọi", "thịt ba rọi"],
+    "pork_ribs": ["sườn", "sườn heo", "sườn non", "sườn lợn"],
+    "pork_ground": ["thịt xay", "thịt băm", "thịt bằm", "heo xay", "thịt heo xay", "thịt lợn xay"],
+    "chicken_whole": ["gà ta", "gà luộc", "thịt gà có da", "gà nguyên con"],
+    "chicken_liver": ["gan gà"],
+    "beef_sirloin": ["bò thăn", "thịt bò thăn", "bò bít tết", "thăn bò"],
+    "crab": ["cua", "cua biển", "ghẹ"],
+    "clam": ["nghêu", "ngao"],
+    "snakehead": ["cá lóc", "cá quả", "cá chuối"],
+    "anchovy": ["cá cơm"],
+    "duck_egg": ["trứng vịt"],
+    "fried_tofu": ["đậu hũ chiên", "đậu phụ rán", "tàu hũ chiên", "đậu rán"],
+    "fresh_rice_noodles": ["bánh phở", "bún tươi", "phở tươi", "sợi phở"],
+    "glutinous_rice": ["gạo nếp", "nếp", "xôi"],
+    "onion": ["hành tây"],
+    "malabar_spinach": ["mồng tơi", "rau mồng tơi"],
+    "bamboo_shoots": ["măng", "măng tươi"],
+    "straw_mushroom": ["nấm rơm"],
+    "shiitake": ["nấm hương", "nấm đông cô"],
+    "kohlrabi": ["su hào"],
+    "jicama": ["củ đậu", "củ sắn"],
+    "lotus_root": ["củ sen"],
+    "scallion": ["hành lá", "hành", "hành hoa"],
+    "garlic": ["tỏi"],
+    "ginger": ["gừng"],
+    "lemongrass": ["sả"],
+    "coriander": ["ngò", "ngò rí", "rau mùi"],
+    "chili": ["ớt"],
+    "lime": ["chanh"],
+    "pineapple": ["dứa", "trái thơm", "quả thơm", "khóm", "trái khóm"],  # không dùng "thơm" trơn (= mùi thơm)
+    "longan": ["quả nhãn", "trái nhãn", "nhãn lồng"],  # không dùng "nhãn" trơn (= nhãn sản phẩm)
+    "pomelo": ["bưởi"],
+    "jackfruit": ["mít"],
+    "coconut_water": ["nước dừa"],
+    "condensed_milk": ["sữa đặc", "sữa ông thọ"],
 }
 
 
@@ -220,6 +293,41 @@ ALIASES_EN: dict[str, list[str]] = {
     "cheeseburger": ["burger", "burgers", "hamburger", "cheeseburger"],
     "banana_chips": ["banana chips"],
     "orange_drink": ["orange juice"],
+    "pork_belly": ["pork belly"],
+    "pork_ribs": ["pork ribs", "ribs", "spare ribs", "spareribs"],
+    "pork_ground": ["ground pork", "minced pork"],
+    "chicken_whole": ["whole chicken", "boiled chicken"],
+    "chicken_liver": ["chicken liver", "chicken livers"],
+    "beef_sirloin": ["sirloin", "beef sirloin"],
+    "crab": ["crab", "crabs"],
+    "clam": ["clam", "clams"],
+    "snakehead": ["snakehead", "snakehead fish"],
+    "anchovy": ["anchovy", "anchovies"],
+    "duck_egg": ["duck egg", "duck eggs"],
+    "fried_tofu": ["fried tofu"],
+    "fresh_rice_noodles": ["fresh rice noodles", "pho noodles"],
+    "glutinous_rice": ["sticky rice", "glutinous rice"],
+    "onion": ["onion", "onions"],
+    "malabar_spinach": ["malabar spinach"],
+    "bamboo_shoots": ["bamboo shoots", "bamboo shoot"],
+    "straw_mushroom": ["straw mushrooms", "straw mushroom"],
+    "shiitake": ["shiitake"],
+    "kohlrabi": ["kohlrabi"],
+    "jicama": ["jicama"],
+    "lotus_root": ["lotus root"],
+    "scallion": ["scallion", "scallions", "green onion", "green onions", "spring onion", "spring onions"],
+    "garlic": ["garlic"],
+    "ginger": ["ginger"],
+    "lemongrass": ["lemongrass", "lemon grass"],
+    "coriander": ["cilantro", "coriander"],
+    "chili": ["chili", "chilli", "chili pepper"],
+    "lime": ["lime", "limes"],
+    "pineapple": ["pineapple"],
+    "longan": ["longan", "longans"],
+    "pomelo": ["pomelo"],
+    "jackfruit": ["jackfruit"],
+    "coconut_water": ["coconut water"],
+    "condensed_milk": ["condensed milk"],
 }
 
 
@@ -305,4 +413,14 @@ DISPLAY_EN: dict[str, str] = {
     "cheeseburger": "Cheeseburger",
     "banana_chips": "Banana chips",
     "orange_drink": "Orange juice drink",
+    "pork_belly": "Pork belly", "pork_ribs": "Pork ribs", "pork_ground": "Ground pork",
+    "chicken_whole": "Chicken (with skin)", "chicken_liver": "Chicken liver", "beef_sirloin": "Beef sirloin",
+    "crab": "Crab", "clam": "Clams", "snakehead": "Snakehead fish", "anchovy": "Fresh anchovies",
+    "duck_egg": "Duck eggs", "fried_tofu": "Fried tofu", "fresh_rice_noodles": "Fresh rice noodles",
+    "glutinous_rice": "Sticky rice", "onion": "Onion", "malabar_spinach": "Malabar spinach",
+    "bamboo_shoots": "Bamboo shoots", "straw_mushroom": "Straw mushrooms", "shiitake": "Shiitake mushrooms",
+    "kohlrabi": "Kohlrabi", "jicama": "Jicama", "lotus_root": "Lotus root", "scallion": "Scallions",
+    "garlic": "Garlic", "ginger": "Ginger", "lemongrass": "Lemongrass", "coriander": "Cilantro",
+    "chili": "Chili", "lime": "Lime", "pineapple": "Pineapple", "longan": "Longan", "pomelo": "Pomelo",
+    "jackfruit": "Jackfruit", "coconut_water": "Coconut water", "condensed_milk": "Sweetened condensed milk",
 }

@@ -49,7 +49,8 @@ def with_llm(ctx, fake, lang="vi"):
 ])
 def test_candidates_contain_expected(catalog, mention, code):
     foods, dishes = RS.candidates(mention, catalog)
-    assert code in foods and len(foods) == RS.TOP_K_FOODS and len(dishes) == RS.TOP_K_DISHES
+    # top-k theo độ giống + nguyên liệu chính của các món ứng viên (vòng 7)
+    assert code in foods and len(foods) >= RS.TOP_K_FOODS and len(dishes) == RS.TOP_K_DISHES
 
 
 def test_schema_enum_only_candidates(catalog):
@@ -101,29 +102,47 @@ def test_low_confidence_asks_then_resolved(make_ctx):
 
 
 def test_composite_ai_estimate_and_clamp(make_ctx):
-    fake = FakeLLM([{"mention": "bún bò huế", "kind": "composite", "confidence": 0.85, "components": [
+    """Món ghép KHÔNG có trong catalog ("bánh canh bò") ⇒ composite, khối lượng AI ước tính bị kẹp."""
+    fake = FakeLLM([{"mention": "bánh canh bò", "kind": "composite", "confidence": 0.85, "components": [
         {"food_code": "rice_noodles", "grams": 90}, {"food_code": "beef_lean", "grams": 900},
-        {"food_code": "bean_sprouts", "grams": 1}]}])
-    res = RS.resolve_mentions(fake, ["bún bò huế"], make_ctx()[0].catalog_full, "vi")
-    r = res["bún bò huế"]
-    assert r.kind == "composite" and dict(r.components) == {"rice_noodles": 90, "beef_lean": 400, "bean_sprouts": 30}
-    assert set(r.warnings) == {"GRAMS_CLAMPED:beef_lean", "GRAMS_CLAMPED:bean_sprouts"}
+        {"food_code": "catfish", "grams": 1}]}])
+    res = RS.resolve_mentions(fake, ["bánh canh bò"], make_ctx()[0].catalog_full, "vi")
+    r = res["bánh canh bò"]
+    assert r.kind == "composite" and dict(r.components) == {"rice_noodles": 90, "beef_lean": 400, "catfish": 50}
+    assert set(r.warnings) == {"GRAMS_CLAMPED:beef_lean", "GRAMS_CLAMPED:catfish"}
+    # vòng 8 N0b: 400 g bò + cá trong một bữa ⇒ thực đơn xung đột ⇒ trả lời info, không tạo đề xuất hỏng
     ctx, _ = make_ctx()
-    out = handle("trưa nay ăn bún bò huế", parsed(["bún bò huế"], slot="lunch"), with_llm(ctx, fake))
+    out = handle("trưa nay ăn bánh canh bò", parsed(["bánh canh bò"], slot="lunch"), with_llm(ctx, fake))
+    assert out.kind == "info" and not out.proposals and "bánh canh bò" in out.text
+    # khẩu phần hợp lý ⇒ đề xuất, món ghép giữ nguyên khối lượng AI ước tính
+    RS.cache.clear()
+    fake = FakeLLM([{"mention": "bánh canh bò", "kind": "composite", "confidence": 0.85, "components": [
+        {"food_code": "rice_noodles", "grams": 90}, {"food_code": "beef_lean", "grams": 100}]}])
+    ctx, _ = make_ctx()
+    out = handle("trưa nay ăn bánh canh bò", parsed(["bánh canh bò"], slot="lunch"), with_llm(ctx, fake))
     assert out.kind == "proposal", out.text
     lunch = next(m for m in out.proposals[0].plan.meals if m.slot == "lunch")
-    assert {i.food_code: i.grams for i in lunch.items} == {"rice_noodles": 90, "beef_lean": 400, "bean_sprouts": 30}
+    assert {i.food_code: i.grams for i in lunch.items} == {"rice_noodles": 90, "beef_lean": 100}
     assert all(i.origin == "ai_estimate" and i.locked for i in lunch.items) and lunch.dish_code is None
-    assert "AI ước tính" in out.text and "bún bò huế" in out.text
+    assert "AI ước tính" in out.text and "bánh canh bò" in out.text
+
+
+def test_catalog_dish_wins_over_composite(make_ctx):
+    """Vòng 7: "bún bò huế" đã là món trong catalog ⇒ dùng món (không cần LLM, không phải món ghép)."""
+    fake = FakeLLM([])
+    ctx, _ = make_ctx()
+    out = handle("trưa nay ăn bún bò huế", parsed(["bún bò huế"], slot="lunch"), with_llm(ctx, fake))
+    lunch = next(m for m in out.proposals[0].plan.meals if m.slot == "lunch")
+    assert fake.calls == 0 and lunch.dish_code == "bun_bo_hue"
 
 
 def test_composite_with_allergen_component_refused(make_ctx):
-    fake = FakeLLM([{"mention": "canh chua cá lóc", "kind": "composite", "confidence": 0.9, "components": [
+    fake = FakeLLM([{"mention": "lẩu cá", "kind": "composite", "confidence": 0.9, "components": [
         {"food_code": "catfish", "grams": 150}, {"food_code": "tomato", "grams": 80}]}])
     ctx, _ = make_ctx(allergies=["fish"])
-    r = handle("tôi muốn ăn canh chua cá lóc", parsed(["canh chua cá lóc"]), with_llm(ctx, fake))
+    r = handle("tôi muốn ăn lẩu cá", parsed(["lẩu cá"]), with_llm(ctx, fake))
     assert r.kind == "refusal" and not r.proposals
-    assert "canh chua cá lóc" in r.text and "cá da trơn" in r.text and "dị ứng cá" in r.text
+    assert "lẩu cá" in r.text and "cá da trơn" in r.text and "dị ứng cá" in r.text
 
 
 def test_cache_hit_skips_llm(make_ctx):
@@ -178,11 +197,17 @@ def test_dislike_proposes_preference(make_ctx):
 
 
 def test_dislike_unknown_food_saved_as_text(make_ctx):
-    """L0b: "hành" chưa có trong catalog ⇒ đề xuất lưu dạng chữ (công thức sẽ tránh), không bịa mã."""
+    """L0b: thứ chưa có trong catalog ("rau răm") ⇒ đề xuất lưu dạng chữ (công thức sẽ tránh), không bịa mã."""
     ctx, _ = make_ctx()
-    r = ask(ctx, "tôi không ăn được hành")  # parser quy tắc: tách cụm sau "không ăn được"
-    assert r.kind == "proposal" and r.proposals[0].preference == {"kind": "text", "code": "hành"}
-    assert "tránh hành" in r.proposals[0].label
+    r = ask(ctx, "tôi không ăn được rau răm")  # parser quy tắc: tách cụm sau "không ăn được"
+    assert r.kind == "proposal" and r.proposals[0].preference == {"kind": "text", "code": "rau răm"}
+    assert "tránh rau răm" in r.proposals[0].label
+
+
+def test_dislike_scallion_now_in_catalog(make_ctx):
+    """Vòng 7: "hành" đã có dữ liệu (hành lá) ⇒ thành "không thích" theo mã, planner tránh được."""
+    ctx, _ = make_ctx()
+    assert ask(ctx, "tôi không ăn được hành").proposals[0].preference == {"kind": "food", "code": "scallion"}
 
 
 def test_allergy_statement_never_proposes_food(make_ctx):
@@ -223,7 +248,7 @@ def test_po_sentences_do_not_break(make_ctx):
         ("toi muon an ga ran", [], "proposal"),  # khớp alias không dấu, không cần LLM
         ("trứg luộc", ["trứg luộc"], "proposal"),
         ("trưa nay ăn bún bò huế", ["bún bò huế"], "proposal"),
-        ("cho tôi ít trái thơm", ["trái thơm"], "need_label"),
+        ("cho tôi ít trái thơm", ["trái thơm"], "proposal"),  # vòng 7: dứa/thơm đã có dữ liệu
         ("tôi không ăn được hành", ["hành"], "proposal"),
         ("I don't like fish", ["fish"], "proposal"),
         ("tôi bị dị ứng tôm", ["tôm"], "allergy_redirect"),

@@ -62,6 +62,8 @@ class Dish(BaseModel):
     code: str
     name_vi: str
     name_en: str | None = None
+    # phần ăn kèm điển hình khi GHI NHẬT KÝ món (vd cơm tấm ⇒ cơm): [{food_code, grams}] — giả định, sửa được
+    log_sides: list[dict] = []
     main: list[str]
     slots: str
 

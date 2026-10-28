@@ -35,6 +35,7 @@ include = ["app*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = ["slow: chạy lâu (vẫn chạy mặc định); bỏ qua bằng -m \"not slow\""]
 # Chỉ tắt 2 cảnh báo PuLP 4.0 đã biết (đã pin pulp<4); các cảnh báo khác vẫn hiện.
 filterwarnings = [
     "ignore:Constructing LpVariable\\(name, \\.\\.\\.\\) directly is deprecated:DeprecationWarning",
@@ -43,3 +44,7 @@ filterwarnings = [
 
 [tool.ruff]
 line-length = 120
+
+[tool.ruff.lint.per-file-ignores]
+# `Depends(...)`/`File(...)` làm giá trị mặc định là mẫu chuẩn của FastAPI (được gọi lại mỗi request), không phải lỗi B008
+"app/api/*" = ["B008"]

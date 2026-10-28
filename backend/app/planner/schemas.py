@@ -46,6 +46,8 @@ class PlanRequest(BaseModel):
     tolerance: float = 0.05
     forbidden_dishes: set[str] = set()
     recent_dishes: dict[str, int] = {}  # dish_code → số ngày gần đây đã dùng (phạt nhẹ để đa dạng)
+    # nguyên liệu protein → số ngày trong 2 ngày liền trước đã dùng (phạt NẶNG hơn lặp món: đa dạng nguồn đạm)
+    recent_foods: dict[str, int] = {}
     locked: list[LockedItem] = []
     structure: dict[str, MealStructure] | None = None  # None = sinh mới
     required: list[Requirement] = []
@@ -60,6 +62,7 @@ class PlanRequest(BaseModel):
     disliked_dishes: set[str] = set()
     # Sàn năng lượng theo từng bữa (cân lại sau khi ăn): phạt rất nặng nếu thấp hơn — không bỏ bữa
     min_slot_energy_kcal: dict[str, float] = {}
+    dish_pool: int | None = None  # số món ứng viên mỗi bữa (None = mặc định); đổi bữa thử lại với toàn bộ món
 
 
 class PlanItem(BaseModel):

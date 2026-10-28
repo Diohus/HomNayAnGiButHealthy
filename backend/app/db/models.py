@@ -115,6 +115,7 @@ class Dish(Base):
     code: Mapped[str] = mapped_column(String(64), primary_key=True)
     name_vi: Mapped[str] = mapped_column(String(120))
     name_en: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    log_sides: Mapped[list | None] = mapped_column(JSON, nullable=True)  # phần ăn kèm khi ghi nhật ký
     slots: Mapped[str] = mapped_column(String(4))
     components: Mapped[list["DishComponent"]] = relationship(cascade="all, delete-orphan", lazy="selectin")
 

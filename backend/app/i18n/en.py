@@ -7,6 +7,7 @@ EN: dict[str, str] = {
     "error.ALLERGEN_CONFLICT.custom": "This product conflicts with the {reason} you declared.",
     "error.ALLERGEN_CONFLICT.proposal": "This suggestion contains an ingredient that no longer fits your profile.",
     "error.BAD_CREDENTIALS": "Incorrect email or password.",
+    "error.BAD_PASSWORD": "Incorrect password.",
     "error.DAYS_RANGE.view": "You can view 1–14 days at a time.",
     "error.DAYS_RANGE.generate": "You can create 1–7 days at a time.",
     "error.DELTA_RANGE": "Each adjustment must be between 1 and 500 g.",
@@ -41,6 +42,12 @@ EN: dict[str, str] = {
     "error.STALE_PROPOSAL": "Your menu changed after this suggestion was made. Please ask the chatbot again.",
     "error.UNAUTHENTICATED": "Please log in.",
     "error.VALIDATION_ERROR": "Invalid data.",
+    # ---------- Round 8 ----------
+    "chat.cannot_schedule": "I couldn't fit {foods} into {day}'s menu (no valid option for your targets and constraints). Please try another meal or another day.",
+    "chat.log_past_day": "I can only log meals for today for now. Earlier days can't be logged yet — you can skip it or log today's meals.",
+    "error.PHOTO_UNAVAILABLE": "The AI can't analyse photos right now. You can still log foods by hand.",
+    "error.NOT_FOOD_PHOTO": "This doesn't look like a photo of food. Please try again with a photo of your plate or bowl.",
+    "error.INTAKE_BATCH_SIZE": "You can log 1–{max} items at a time.",
     # ---------- Round 6: intake log, shopping list, text dislikes ----------
     "error.SERVINGS_RANGE": "Number of people must be between 1 and 10.",
     "error.SLOT_INVALID": "Invalid meal.",
@@ -51,6 +58,7 @@ EN: dict[str, str] = {
     "chat.log_label": "Log to today's diary",
     "chat.rebalance_label": "Rebalance the remaining meals",
     "chat.ai_estimate_short": "AI estimate",
+    "chat.estimate_short": "estimate",
     "shop.category.protein": "Meat, fish, eggs, beans",
     "shop.category.carb": "Starches",
     "shop.category.vegetable": "Vegetables",
@@ -86,7 +94,7 @@ EN: dict[str, str] = {
         "enter them in Settings. Please confirm you manage your own diet to continue."
     ),
     "error.LIMIT_NOT_FOUND": "Limit not found.",
-    "error.AI_CONSENT_REQUIRED": "You need to agree to send the image/text to the AI provider to read the document.",
+    "error.AI_CONSENT_REQUIRED": "You need to agree to send the image/text to the AI provider for processing.",
     "error.EXTRACT_INPUT_REQUIRED": "Send exactly one image or one piece of text.",
     "error.TEXT_TOO_LONG": "Text can be at most {max} characters.",
     "error.FILE_TOO_LARGE": "Images can be at most {max_mb} MB.",

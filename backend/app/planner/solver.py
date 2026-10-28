@@ -30,6 +30,8 @@ CATEGORY_ORDER = ["protein", "carb", "vegetable", "dairy", "fruit", "nut", "fat"
 UNKNOWN_GI = 70.0  # giả định bảo thủ cho tinh bột chưa có GI
 DAILY_MAX_FACTOR = 1.5  # tổng 1 nguyên liệu tự do trong ngày ≤ 1.5 × max_g một bữa
 MICROS = ("calcium_mg", "iron_mg", "zinc_mg", "vitamin_d_ug")
+FOOD_REPEAT_PENALTY = 2.0  # mỗi ngày (trong 2 ngày trước) đã dùng cùng nguyên liệu protein; > 0,5 của lặp món
+EGG_EXTRA_MEAL_PENALTY = 40.0  # trứng là nguồn đạm chính tối đa 1 bữa/ngày (đa dạng — không phải khuyến nghị y khoa)
 DISLIKE_PENALTY = 30.0  # phạt mềm cho món/nguyên liệu không thích (< 50 của "bữa thiếu món chính")
 MAIN_MIN_SHARE = 0.4  # nguyên liệu chính của món ≥ 40% khẩu phần tối đa (giả định, tránh "món gà" chỉ 50 g)
 POOL = {"dish": 6, "carb": 4, "vegetable": 6, "fruit": 3, "dairy": 3, "nut": 2, "fat": 2}
@@ -102,7 +104,8 @@ def solve_day(req: PlanRequest, catalog: FoodCatalog) -> DayPlan:
             conflicts.append(f"REQUIRED_NOT_ALLOWED:{r.code}")
         elif r.code in req.forbidden_dishes:
             conflicts.append(f"REQUIRED_DISH_ROTATION:{r.code}")
-        elif r.slot and (r.slot not in slots or not catalog.dishes[r.code].allowed_in(r.slot)):
+        elif r.slot and (r.slot not in slots or not catalog.dishes[r.code].allowed_in(r.slot)
+                         or not all(catalog.food(m).allowed_in(r.slot) for m in catalog.dishes[r.code].main)):
             conflicts.append(f"REQUIRED_SLOT_INVALID:{r.code}:{r.slot}")
     for r in required_foods:
         if r.code not in catalog.foods:
@@ -136,9 +139,9 @@ def solve_day(req: PlanRequest, catalog: FoodCatalog) -> DayPlan:
         cands = [d for d in catalog.dishes.values() if d.allowed_in(slot) and d.code not in req.forbidden_dishes]
         must = [d for d in cands if d.code in req_dish_codes or set(d.main) & keep_codes]
         rest = sorted((d for d in cands if d not in must), key=lambda d: (
-            disliked_dish(d), _jitter(req.day, f"{slot}:{d.code}", 1.0) + 0.5 * req.recent_dishes.get(d.code, 0),
-            d.code))
-        return must + rest[:max(0, POOL["dish"] - len(must))]
+            disliked_dish(d), _jitter(req.day, f"{slot}:{d.code}", 1.0) + 0.5 * req.recent_dishes.get(d.code, 0)
+            + FOOD_REPEAT_PENALTY * sum(req.recent_foods.get(c, 0) for c in d.main), d.code))
+        return must + rest[:max(0, (req.dish_pool or POOL["dish"]) - len(must))]
 
     def free_foods(slot: str, dishes) -> list[Food]:
         if slot in frozen:
@@ -336,8 +339,19 @@ def solve_day(req: PlanRequest, catalog: FoodCatalog) -> DayPlan:
         if req.structure is None:
             prob += pulp.lpSum(e for (c, _), e in g.items() if c == code) <= DAILY_MAX_FACTOR * f.max_g
         obj.append((0.3 + _jitter(req.day, code, 0.4)) * v)
+        if f.category == "protein" and req.recent_foods.get(code):
+            obj.append(FOOD_REPEAT_PENALTY * req.recent_foods[code] * v)
         if code in req.disliked_foods:
             obj.append(DISLIKE_PENALTY * v)
+
+    # Trứng (gà/vịt): tối đa 1 bữa/ngày — ràng buộc mềm, phạt nặng mỗi bữa vượt
+    eggs = {c for c, f in catalog.foods.items() if "egg" in f.tags and f.category == "protein"}
+    egg_terms = [uv for (c, _), uv in u.items() if c in eggs]
+    fixed_egg_meals = len({sl for (c, sl) in fixed if c in eggs})
+    if egg_terms:
+        egg_excess = pulp.LpVariable("egg_excess", 0)
+        prob += egg_excess >= pulp.lpSum(egg_terms) + fixed_egg_meals - 1
+        obj.append(EGG_EXTRA_MEAL_PENALTY * egg_excess)
 
     prob += pulp.lpSum(obj)
     status = prob.solve(pulp.PULP_CBC_CMD(msg=False, timeLimit=req.time_limit_s, gapRel=0.01, gapAbs=3.0))
@@ -414,7 +428,9 @@ def finalize(req: PlanRequest, catalog: FoodCatalog, meals: list[MealPlan], conf
             if t.kind in ("target", "max"):
                 hard_fail = True
     for m in meals:
-        if m.slot != SNACK and m.dish_code is None and m.items:
+        kept = m.slot in req.frozen_slots or (m.items and all(
+            it.origin in ("frozen", "ai_estimate", "intake") for it in m.items))
+        if m.slot != SNACK and m.dish_code is None and m.items and not kept:  # bữa giữ nguyên/đã ăn: không báo
             warnings.append(f"NO_MAIN_DISH:{m.slot}")
 
     used = {it.food_code for it in all_items}

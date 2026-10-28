@@ -22,6 +22,8 @@ class ParsedIntent(BaseModel):
     cheat_day: bool = Field(description="User explicitly says today is a cheat day")
     # Chỉ do parser quy tắc điền (không có trong schema LLM): cụm sau "không thích/không ăn được/don't like"
     dislike_object: SkipJsonSchema[str | None] = None
+    # Chỉ do parser quy tắc điền: câu nói về hôm qua ("tối qua", "hôm qua", "yesterday", "last night")
+    past_day: SkipJsonSchema[bool] = False
 
 
 class DetectedFood(BaseModel):

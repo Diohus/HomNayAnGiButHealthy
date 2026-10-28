@@ -19,7 +19,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, create_model
 
 from app.ai.providers import LLMProvider
-from app.ai.service import call_structured
+from app.ai.service import DATA_NOT_INSTRUCTIONS, call_structured
 from app.core.cache import LRU
 from app.foods.catalog import FoodCatalog
 from app.foods.matching import en_alias, normalize
@@ -73,7 +73,70 @@ def candidates(mention: str, catalog: FoodCatalog) -> tuple[list[str], list[str]
     tokens = set(m.split())
     foods = sorted(catalog.foods.values(), key=lambda f: (-_score(m, tokens, _names_food(f)), f.code))
     dishes = sorted(catalog.dishes.values(), key=lambda d: (-_score(m, tokens, _names_dish(d)), d.code))
-    return [f.code for f in foods[:TOP_K_FOODS]], [d.code for d in dishes[:TOP_K_DISHES]]
+    top_dishes = [d.code for d in dishes[:TOP_K_DISHES]]
+    top_foods = [f.code for f in foods[:TOP_K_FOODS]]
+    # nguyên liệu chính của các món ứng viên luôn có mặt (vd "cơm tấm" ⇒ sườn heo) để LLM dựng được món ghép
+    extra = [c for code in top_dishes for c in catalog.dishes[code].main if c not in top_foods]
+    return top_foods + list(dict.fromkeys(extra)), top_dishes
+
+
+MAX_NGRAM = 4
+MAX_WORDS = 30  # câu dài: chỉ xét 30 từ đầu (giới hạn chi phí chấm điểm)
+_name_index: dict[str, tuple[list, list]] = {}
+# Từ chức năng (đã bỏ dấu): n-gram CHỈ gồm các từ này bị bỏ qua, để không chiếm chỗ của tên món thật
+STOPWORDS = set("""
+toi minh tui em anh chi ban muon thich them cho xin an uong vua da moi roi xong dang se nay hom ngay mai qua
+sang trua chieu toi bua buoi nha nhe nhi a o voi va hoac la co khong ko k duoc it nhieu mot hai ba 1 2 3 cai
+to bat dia ly coc chen phan suat chut thi ma de lam gi nao day kia di thoi cung con
+i im me my we want wanna would like to eat ate eating had have drink some a an the for and or with just today
+tonight tomorrow yesterday this morning lunch dinner breakfast please can could of in on at no not don t dont
+""".split())  # noqa: SIM905 — dễ đọc hơn list literal 120 phần tử
+
+
+def _index(catalog: FoodCatalog):
+    """Tên đã chuẩn hóa của mọi nguyên liệu/món (tính một lần cho mỗi phiên bản catalog)."""
+    v = catalog_version(catalog)
+    if v not in _name_index:
+        def prep(names):
+            return [(nn, set(nn.split())) for n in names if n and (nn := normalize(n).strip())]
+        _name_index.clear()
+        _name_index[v] = ([(f.code, prep(_names_food(f))) for f in catalog.foods.values()],
+                          [(d.code, prep(_names_dish(d))) for d in catalog.dishes.values()])
+    return _name_index[v]
+
+
+def ngrams(text: str) -> list[str]:
+    """Cụm 1–4 từ liên tiếp của câu (bỏ dấu, chuẩn hóa), trừ cụm chỉ gồm từ chức năng."""
+    words = normalize(text).split()[:MAX_WORDS]
+    return list(dict.fromkeys(" ".join(words[i:i + n]) for n in range(1, MAX_NGRAM + 1)
+                              for i in range(len(words) - n + 1)
+                              if not all(w in STOPWORDS for w in words[i:i + n])))
+
+
+def text_candidates(text: str, catalog: FoodCatalog) -> tuple[list[str], list[str]]:
+    """N1: ứng viên cho CẢ CÂU (chưa tách mention): điểm của mỗi mã = điểm cao nhất trên mọi n-gram (1–4 từ).
+    Cùng quy tắc với `candidates`: top-25 nguyên liệu + top-10 món + nguyên liệu chính của các món đó."""
+    grams = [(g, set(g.split())) for g in ngrams(text)]
+    foods_idx, dishes_idx = _index(catalog)
+
+    def best(names) -> float:
+        top = 0.0
+        for nn, nt in names:
+            sm = SequenceMatcher(None, "", nn)
+            for g, gt in grams:
+                sm.set_seq1(g)
+                if sm.real_quick_ratio() > top and sm.quick_ratio() > top:
+                    top = max(top, sm.ratio())
+                if nt:
+                    top = max(top, 0.9 * len(gt & nt) / len(nt))
+        return top
+
+    foods = sorted(((-best(n), c) for c, n in foods_idx))
+    dishes = sorted(((-best(n), c) for c, n in dishes_idx))
+    top_dishes = [c for _, c in dishes[:TOP_K_DISHES]]
+    top_foods = [c for _, c in foods[:TOP_K_FOODS]]
+    extra = [c for code in top_dishes for c in catalog.dishes[code].main if c not in top_foods]
+    return top_foods + list(dict.fromkeys(extra)), top_dishes
 
 
 def catalog_version(catalog: FoodCatalog) -> str:
@@ -86,15 +149,15 @@ def catalog_version(catalog: FoodCatalog) -> str:
 
 
 # ---------------- schema động ----------------
-def build_model(food_codes: list[str], dish_codes: list[str], n: int) -> type[BaseModel]:
-    """Schema chỉ cho phép đúng các mã ứng viên (enum dựng mỗi lần gọi)."""
+def mention_model(food_codes: list[str], dish_codes: list[str], key: str = "mention") -> type[BaseModel]:
+    """Kết quả cho MỘT mention; chỉ cho phép đúng các mã ứng viên (enum dựng mỗi lần gọi)."""
     food_lit = Literal[tuple(food_codes)]  # type: ignore[valid-type]
     dish_lit = Literal[tuple(dish_codes)] if dish_codes else Literal["__none__"]  # type: ignore[valid-type]
     opt_lit = Literal[tuple([f"food:{c}" for c in food_codes] + [f"dish:{c}" for c in dish_codes])]  # type: ignore
     component = create_model("Component", food_code=(food_lit, ...), grams=(float, ...))
-    item = create_model(
+    return create_model(
         "MentionResult",
-        mention=(str, ...),
+        **{key: (str, ...)},
         kind=(Kind, ...),
         food_code=(food_lit | None, Field(description="Single ingredient (kind=ingredient)")),
         dish_code=(dish_lit | None, Field(description="Known dish (kind=dish)")),
@@ -103,6 +166,10 @@ def build_model(food_codes: list[str], dish_codes: list[str], n: int) -> type[Ba
         confidence=(float, Field(description="0 to 1")),
         alternatives=(list[opt_lit], Field(max_length=3, description="Other plausible matches")),
     )
+
+
+def build_model(food_codes: list[str], dish_codes: list[str], n: int) -> type[BaseModel]:
+    item = mention_model(food_codes, dish_codes)
     return create_model("FoodResolution", results=(list[item], Field(max_length=max(n, 1))))
 
 
@@ -110,11 +177,11 @@ SYSTEM = (
     "You map food mentions from a meal-planning chat to a fixed catalog. Users may misspell, omit Vietnamese "
     "diacritics, use regional words (e.g. 'trái thơm' = pineapple, 'củ sắn' = jicama) or English. For each mention "
     "return one result: kind=ingredient with food_code if it is one catalog ingredient; kind=dish with dish_code "
-    "if it is one catalog dish; kind=composite with components (catalog ingredients + estimated raw grams for ONE "
+    "if it is one catalog dish (ALWAYS prefer an existing catalog dish over composite); kind=composite with components (catalog ingredients + estimated raw grams for ONE "
     "serving) if it is a mixed dish not in the catalog (e.g. 'bún bò huế' = rice noodles + beef + vegetables); "
     "kind=not_food if it is not food; kind=unknown if nothing in the catalog fits. Use ONLY codes from the enums; "
     "never invent codes. confidence is 0-1; give up to 3 alternatives when unsure. Do not output nutrition values."
-)
+) + DATA_NOT_INSTRUCTIONS
 
 
 def _catalog_lines(catalog: FoodCatalog, foods: list[str], dishes: list[str]) -> str:
@@ -148,6 +215,10 @@ def review(raw, mention: str, catalog: FoodCatalog, foods: set[str], dishes: set
             r.components.append((c.food_code, round(g)))
         if not r.components:
             return Resolution(mention=mention, kind="unknown", confidence=conf)
+        # Catalog đã có món trùng tên ("cơm tấm" ⊂ "Cơm tấm sườn") ⇒ ưu tiên dish (số liệu theo nguyên liệu DB,
+        # không phải khối lượng AI ước tính)
+        if (d := _dish_by_name(mention, catalog, dishes)) is not None:
+            return Resolution(mention=mention, kind="dish", dish_code=d, confidence=conf)
         primary = None
     elif kind in ("not_food", "unknown"):
         return Resolution(mention=mention, kind=kind, confidence=conf, options=alts if conf < CLARIFY_BELOW else [])
@@ -158,6 +229,15 @@ def review(raw, mention: str, catalog: FoodCatalog, foods: set[str], dishes: set
         if len(opts) >= 1:
             return Resolution(mention=mention, kind="clarify", confidence=conf, options=opts[:4])
     return r
+
+
+def _dish_by_name(mention: str, catalog: FoodCatalog, dishes: set[str]) -> str | None:
+    m = normalize(mention).strip()
+    if not m:
+        return None
+    hits = sorted(c for c in dishes for n in (catalog.dishes[c].name_vi, catalog.dishes[c].name_en or "")
+                  if n and (normalize(n).strip() == m or f" {m} " in normalize(n)))
+    return hits[0] if hits else None
 
 
 # ---------------- cache + API ----------------

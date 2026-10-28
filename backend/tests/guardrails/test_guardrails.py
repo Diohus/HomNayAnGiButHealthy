@@ -132,10 +132,12 @@ def test_repeated_low_targets_trigger_support(client):
     assert codes[-1] == "ED_SUPPORT"
 
 
-def test_repeated_decrease_after_target_met_stops_cutting(client, auth):
+def test_repeated_decrease_after_target_met_stops_cutting(client, auth, catalog):
     m = client.post("/api/menu/generate", json={"start": DAY.isoformat()}, headers=auth).json()[0]
     meal = m["plan"]["meals"][1]
-    food = meal["items"][0]["food_code"]
+    # nguyên liệu ít năng lượng nhất của bữa: cân lại bù được ⇒ ngày vẫn "đã đủ" sau mỗi lần giảm
+    # (giảm món rất béo như thịt ba chỉ thì cân lại theo cấu trúc không bù nổi ⇒ không còn là "giảm khi đã đủ")
+    food = min(meal["items"], key=lambda i: catalog.food(i["food_code"]).per_100g["energy_kcal"])["food_code"]
     last = None
     for _ in range(6):
         last = client.post(f"/api/menu/{DAY}/adjust", json={"slot": meal["slot"], "food_code": food, "delta_g": -10},

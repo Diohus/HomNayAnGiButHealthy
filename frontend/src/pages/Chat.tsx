@@ -1,11 +1,13 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, post } from "../api/client";
 import { useFoodNames } from "../api/hooks";
 import { fmtKcal } from "../format";
 import { errorMessage, fmt, useI18n } from "../i18n";
 import type { ChatReply, ClarifyItem, Proposal } from "../types";
+
+const CHAT_TIMEOUT_MS = 30_000; // quá 30 s ⇒ hủy yêu cầu (AbortController), mở khóa nút gửi
 
 interface Msg {
   role: "user" | "assistant"; text: string; kind?: string; proposals?: Proposal[]; unknown?: string[];
@@ -105,19 +107,29 @@ export function ChatPage() {
   const [extra, setExtra] = useState<Msg[]>([]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
+  const pending = useRef<{ ctl: AbortController; timedOut: boolean } | null>(null);
   const { t } = useI18n();
   const msgs: Msg[] = [...(history.data ?? []), ...extra];
 
   async function ask(m: string, resolved?: Record<string, string>) {
+    if (pending.current) return; // một yêu cầu mỗi lúc
+    const p = { ctl: new AbortController(), timedOut: false };
+    pending.current = p;
+    const timer = setTimeout(() => { p.timedOut = true; p.ctl.abort(); }, CHAT_TIMEOUT_MS);
     setBusy(true);
     try {
-      const r = await post<ChatReply>("/chat", { message: m, ...(resolved ? { resolved } : {}) });
+      const r = await post<ChatReply>("/chat", { message: m, ...(resolved ? { resolved } : {}) },
+                                      { signal: p.ctl.signal });
       setExtra((x) => [...x, { role: "assistant", text: r.text, kind: r.kind, proposals: r.proposals,
                                unknown: r.kind === "need_label" ? r.unknown_mentions : undefined,
                                clarify: r.kind === "clarify" ? r.clarify : undefined, source: m }]);
     } catch (x) {
-      setExtra((xs) => [...xs, { role: "assistant", text: errorMessage(x, t), kind: "error" }]);
+      const aborted = x instanceof DOMException && x.name === "AbortError";
+      const text = aborted ? (p.timedOut ? t.chat.timedOut : t.chat.cancelled) : errorMessage(x, t);
+      setExtra((xs) => [...xs, { role: "assistant", text, kind: "error" }]);
     } finally {
+      clearTimeout(timer);
+      pending.current = null;
       setBusy(false);
     }
   }
@@ -161,7 +173,12 @@ export function ChatPage() {
             )}
           </div>
         ))}
-        {busy && <div className="bubble assistant muted">…</div>}
+        {busy && (
+          <div className="bubble assistant muted" role="status" aria-live="polite">
+            <p>{t.chat.understanding}</p>
+            <button type="button" className="link" onClick={() => pending.current?.ctl.abort()}>{t.chat.cancel}</button>
+          </div>
+        )}
       </div>
       <form className="composer" onSubmit={send}>
         <input aria-label={t.chat.message} value={text} maxLength={1000} placeholder={t.chat.placeholder} onChange={(e) => setText(e.target.value)} />

@@ -8,6 +8,7 @@ VI: dict[str, str] = {
     "error.ALLERGEN_CONFLICT.custom": "Sản phẩm này mâu thuẫn với {reason} bạn đã khai báo.",
     "error.ALLERGEN_CONFLICT.proposal": "Đề xuất chứa nguyên liệu không còn phù hợp với hồ sơ.",
     "error.BAD_CREDENTIALS": "Email hoặc mật khẩu không đúng.",
+    "error.BAD_PASSWORD": "Mật khẩu không đúng.",
     "error.DAYS_RANGE.view": "Chỉ xem được 1–14 ngày mỗi lần.",
     "error.DAYS_RANGE.generate": "Chỉ sinh được 1–7 ngày mỗi lần.",
     "error.DELTA_RANGE": "Mỗi lần chỉ chỉnh từ 1 đến 500 g.",
@@ -42,6 +43,12 @@ VI: dict[str, str] = {
     "error.STALE_PROPOSAL": "Thực đơn đã thay đổi sau khi đề xuất được tạo. Hãy hỏi lại chatbot.",
     "error.UNAUTHENTICATED": "Bạn cần đăng nhập.",
     "error.VALIDATION_ERROR": "Dữ liệu không hợp lệ.",
+    # ---------- Vòng 8 ----------
+    "chat.cannot_schedule": "Mình chưa xếp được {foods} vào thực đơn {day} (không tìm được phương án hợp lệ với mục tiêu và ràng buộc của bạn). Bạn thử bữa khác hoặc ngày khác nhé.",
+    "chat.log_past_day": "Hiện mình chỉ ghi được nhật ký cho hôm nay. Món ăn của ngày trước chưa ghi được — bạn có thể bỏ qua hoặc ghi lại món hôm nay.",
+    "error.PHOTO_UNAVAILABLE": "Hiện chưa phân tích được ảnh bằng AI. Bạn vẫn có thể ghi món bằng tay.",
+    "error.NOT_FOOD_PHOTO": "Ảnh này có vẻ không phải ảnh món ăn. Bạn thử chụp lại đĩa/bát thức ăn nhé.",
+    "error.INTAKE_BATCH_SIZE": "Mỗi lần chỉ ghi được 1–{max} món.",
     # ---------- Vòng 6: nhật ký đã ăn, đi chợ, không thích dạng chữ ----------
     "error.SERVINGS_RANGE": "Số người ăn phải trong khoảng 1–10.",
     "error.SLOT_INVALID": "Bữa không hợp lệ.",
@@ -52,6 +59,7 @@ VI: dict[str, str] = {
     "chat.log_label": "Ghi vào nhật ký hôm nay",
     "chat.rebalance_label": "Cân lại các bữa còn lại",
     "chat.ai_estimate_short": "AI ước tính",
+    "chat.estimate_short": "ước tính",
     "shop.category.protein": "Thịt, cá, trứng, đậu",
     "shop.category.carb": "Tinh bột",
     "shop.category.vegetable": "Rau củ",
@@ -89,7 +97,7 @@ VI: dict[str, str] = {
         "Vui lòng xác nhận bạn tự quản lý chế độ ăn để tiếp tục."
     ),
     "error.LIMIT_NOT_FOUND": "Không tìm thấy giới hạn này.",
-    "error.AI_CONSENT_REQUIRED": "Bạn cần đồng ý gửi ảnh/văn bản tới nhà cung cấp AI để đọc tài liệu.",
+    "error.AI_CONSENT_REQUIRED": "Bạn cần đồng ý gửi ảnh/văn bản tới nhà cung cấp AI để xử lý.",
     "error.EXTRACT_INPUT_REQUIRED": "Hãy gửi đúng một ảnh hoặc một đoạn văn bản.",
     "error.TEXT_TOO_LONG": "Văn bản tối đa {max} ký tự.",
     "error.FILE_TOO_LARGE": "Ảnh tối đa {max_mb} MB.",

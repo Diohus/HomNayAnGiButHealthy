@@ -15,9 +15,15 @@ from pydantic import BaseModel
 # Món ghép chứa tên nguyên liệu nhưng là món khác, CHƯA có dữ liệu xác minh (vd "trà sữa" ≠ "sữa").
 # Khớp các cụm này sẽ "chiếm chỗ" để không bị hiểu nhầm, và được báo là chưa có dữ liệu.
 UNKNOWN_COMPOUNDS = [
-    "trà sữa", "cà phê sữa", "sữa đặc", "sinh tố", "nước ép", "bánh flan", "bánh bao", "bánh cuốn", "bánh xèo",
-    "bánh tráng trộn", "xôi", "chè", "bánh mì que", "kem đánh răng", "kem chống nắng", "kem dưỡng",
+    "trà sữa", "cà phê sữa", "sinh tố", "nước ép", "bánh flan", "bánh bao", "bánh cuốn", "bánh xèo",
+    "bánh tráng trộn", "chè", "bánh mì que", "kem đánh răng", "kem chống nắng", "kem dưỡng",
+    # ("xôi", "sữa đặc" đã có dữ liệu từ vòng 7)
 ]
+# Alias chỉ khớp khi người dùng GÕ CÓ DẤU: bỏ dấu thì trùng một từ rất thông dụng
+# (tỏi/tôi, cua/của, măng/mang, bưởi/buổi, ngò/ngô — "ngô" là bắp đã có sẵn).
+DIACRITIC_ONLY = {"tỏi", "cua", "măng", "bưởi", "ngò"}
+# Tên gọi tắt của món trong catalog (chỉ khi KHÔNG mơ hồ: "phở" trơn có thể là phở bò hoặc phở gà ⇒ không thêm)
+DISH_ALIASES = {"cơm tấm": "com_tam_suon", "broken rice": "com_tam_suon"}
 _UNIT_TOKEN = re.compile(r"^(\d+(?:[.,]\d+)?)(kg|g|gr|gram|ml|l)?$")
 CONTAINER_WORDS = {"lon", "hop", "ly", "coc", "chai", "goi", "cai", "mieng", "bat", "to", "dia"}
 _UNITS = {"g": "g", "gr": "g", "gram": "g", "kg": "kg", "ml": "ml", "l": "l", "lít": "l", "lit": "l"}
@@ -58,6 +64,8 @@ def _alias_index(catalog, keep: bool) -> list[tuple[str, str | None]]:
     pairs: list[tuple[str, str | None]] = []
     for f in catalog.foods.values():
         for a in {*f.aliases, f.name_vi, en_alias(f.name_en), en_alias(f.display_en)}:
+            if not keep and normalize(a, True).strip() in DIACRITIC_ONLY:
+                continue  # câu không dấu: "toi" là "tôi", không phải "tỏi"
             na = normalize(a, keep).strip()
             if na:
                 pairs.append((na, f.code))
@@ -84,6 +92,29 @@ def _quantity_before(norm: str, start: int) -> tuple[float | None, str | None]:
             return v, "ml"
         return v, "portion"
     return None, None
+
+
+def find_dishes(text: str, catalog) -> list[tuple[str, int, int]]:
+    """Món trong catalog được gọi đúng tên (vi/en), không chồng lấn, cụm dài nhất trước: [(dish_code, start, end)]
+    trên chuỗi đã chuẩn hóa như find_foods. Vd "tôi vừa ăn 1 tô phở bò" ⇒ pho_bo (không tách "phở" + "bò")."""
+    keep = has_diacritics(text)
+    norm = normalize(text, keep)
+    pairs = [(n, d.code) for d in catalog.dishes.values() for n in (d.name_vi, d.name_en or "")]
+    pairs += [(n, c) for n, c in DISH_ALIASES.items() if c in catalog.dishes]
+    names = sorted(((normalize(n, keep).strip(), c) for n, c in pairs if n and normalize(n, keep).strip()),
+                   key=lambda x: (-len(x[0]), x[1]))
+    taken = [False] * len(norm)
+    out = []
+    for name, code in names:
+        i = norm.find(f" {name} ")
+        if i == -1:
+            continue
+        s, e = i + 1, i + 1 + len(name)
+        if any(taken[s:e]) or any(c == code for c, _, _ in out):
+            continue
+        taken[s:e] = [True] * (e - s)
+        out.append((code, s, e))
+    return sorted(out, key=lambda x: x[1])
 
 
 def find_unknown_compounds(text: str) -> list[str]:

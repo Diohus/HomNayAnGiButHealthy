@@ -13,7 +13,7 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 from pydantic import BaseModel, Field, ValidationError
 
 from app.ai.providers import LLMProvider
-from app.ai.service import call_structured
+from app.ai.service import DATA_NOT_INSTRUCTIONS, call_structured
 from app.core.errors import AppError
 from app.core.i18n import Lang, tr
 from app.foods.matching import normalize
@@ -66,7 +66,7 @@ SYSTEM = (
     "system converts it); never use g_salt for anything else. For each item, quote the exact text from the document. Put "
     "instructions that have no number (e.g. 'avoid fried food') in other_instructions, verbatim. If nothing is "
     "found, return empty lists."
-)
+) + DATA_NOT_INSTRUCTIONS
 
 
 def prepare_image(data: bytes) -> str:

@@ -152,7 +152,8 @@ def test_rebalance_keeps_structure_and_target(catalog):
     structure = {m.slot: MealStructure(dish_code=m.dish_code, food_codes=[i.food_code for i in m.items])
                  for m in base.meals}
     lunch = next(m for m in base.meals if m.slot == "lunch")
-    main = lunch.items[0]
+    # +50 g nguyên liệu ít béo nhất của bữa (thịt ba chỉ ~53 % béo: +50 g tự nó đã vượt mục tiêu chất béo)
+    main = min(lunch.items, key=lambda i: cat.food(i.food_code).per_100g.get("fat_g") or 0)
     locked = [LockedItem(food_code=main.food_code, grams=main.grams + 50, slot="lunch")]
     st = {k: MealStructure(dish_code=v.dish_code, food_codes=[c for c in v.food_codes
                                                              if not (k == "lunch" and c == main.food_code)])

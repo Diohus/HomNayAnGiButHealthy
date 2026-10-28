@@ -236,9 +236,9 @@ def test_violations_avoid_word_boundaries():
 
 
 def test_chat_dislike_text_apply(client, auth):
-    r = client.post("/api/chat", json={"message": "tôi không ăn được hành"}, headers=auth).json()
+    r = client.post("/api/chat", json={"message": "tôi không ăn được rau răm"}, headers=auth).json()
     p = r["proposals"][0]
-    assert p["preference"] == {"kind": "text", "code": "hành"}
+    assert p["preference"] == {"kind": "text", "code": "rau răm"}
     client.post(f"/api/chat/proposals/{p['id']}/apply", headers=auth)
     assert client.get("/api/preferences/dislikes", headers=auth).json()[0]["kind"] == "text"
 
