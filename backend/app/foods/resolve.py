@@ -80,65 +80,6 @@ def candidates(mention: str, catalog: FoodCatalog) -> tuple[list[str], list[str]
     return top_foods + list(dict.fromkeys(extra)), top_dishes
 
 
-MAX_NGRAM = 4
-MAX_WORDS = 30  # câu dài: chỉ xét 30 từ đầu (giới hạn chi phí chấm điểm)
-_name_index: dict[str, tuple[list, list]] = {}
-# Từ chức năng (đã bỏ dấu): n-gram CHỈ gồm các từ này bị bỏ qua, để không chiếm chỗ của tên món thật
-STOPWORDS = set("""
-toi minh tui em anh chi ban muon thich them cho xin an uong vua da moi roi xong dang se nay hom ngay mai qua
-sang trua chieu toi bua buoi nha nhe nhi a o voi va hoac la co khong ko k duoc it nhieu mot hai ba 1 2 3 cai
-to bat dia ly coc chen phan suat chut thi ma de lam gi nao day kia di thoi cung con
-i im me my we want wanna would like to eat ate eating had have drink some a an the for and or with just today
-tonight tomorrow yesterday this morning lunch dinner breakfast please can could of in on at no not don t dont
-""".split())  # noqa: SIM905 — dễ đọc hơn list literal 120 phần tử
-
-
-def _index(catalog: FoodCatalog):
-    """Tên đã chuẩn hóa của mọi nguyên liệu/món (tính một lần cho mỗi phiên bản catalog)."""
-    v = catalog_version(catalog)
-    if v not in _name_index:
-        def prep(names):
-            return [(nn, set(nn.split())) for n in names if n and (nn := normalize(n).strip())]
-        _name_index.clear()
-        _name_index[v] = ([(f.code, prep(_names_food(f))) for f in catalog.foods.values()],
-                          [(d.code, prep(_names_dish(d))) for d in catalog.dishes.values()])
-    return _name_index[v]
-
-
-def ngrams(text: str) -> list[str]:
-    """Cụm 1–4 từ liên tiếp của câu (bỏ dấu, chuẩn hóa), trừ cụm chỉ gồm từ chức năng."""
-    words = normalize(text).split()[:MAX_WORDS]
-    return list(dict.fromkeys(" ".join(words[i:i + n]) for n in range(1, MAX_NGRAM + 1)
-                              for i in range(len(words) - n + 1)
-                              if not all(w in STOPWORDS for w in words[i:i + n])))
-
-
-def text_candidates(text: str, catalog: FoodCatalog) -> tuple[list[str], list[str]]:
-    """N1: ứng viên cho CẢ CÂU (chưa tách mention): điểm của mỗi mã = điểm cao nhất trên mọi n-gram (1–4 từ).
-    Cùng quy tắc với `candidates`: top-25 nguyên liệu + top-10 món + nguyên liệu chính của các món đó."""
-    grams = [(g, set(g.split())) for g in ngrams(text)]
-    foods_idx, dishes_idx = _index(catalog)
-
-    def best(names) -> float:
-        top = 0.0
-        for nn, nt in names:
-            sm = SequenceMatcher(None, "", nn)
-            for g, gt in grams:
-                sm.set_seq1(g)
-                if sm.real_quick_ratio() > top and sm.quick_ratio() > top:
-                    top = max(top, sm.ratio())
-                if nt:
-                    top = max(top, 0.9 * len(gt & nt) / len(nt))
-        return top
-
-    foods = sorted(((-best(n), c) for c, n in foods_idx))
-    dishes = sorted(((-best(n), c) for c, n in dishes_idx))
-    top_dishes = [c for _, c in dishes[:TOP_K_DISHES]]
-    top_foods = [c for _, c in foods[:TOP_K_FOODS]]
-    extra = [c for code in top_dishes for c in catalog.dishes[code].main if c not in top_foods]
-    return top_foods + list(dict.fromkeys(extra)), top_dishes
-
-
 def catalog_version(catalog: FoodCatalog) -> str:
     h = hashlib.sha256()
     for code in sorted(catalog.foods):
@@ -149,7 +90,7 @@ def catalog_version(catalog: FoodCatalog) -> str:
 
 
 # ---------------- schema động ----------------
-def mention_model(food_codes: list[str], dish_codes: list[str], key: str = "mention") -> type[BaseModel]:
+def mention_model(food_codes: list[str], dish_codes: list[str]) -> type[BaseModel]:
     """Kết quả cho MỘT mention; chỉ cho phép đúng các mã ứng viên (enum dựng mỗi lần gọi)."""
     food_lit = Literal[tuple(food_codes)]  # type: ignore[valid-type]
     dish_lit = Literal[tuple(dish_codes)] if dish_codes else Literal["__none__"]  # type: ignore[valid-type]
@@ -157,7 +98,7 @@ def mention_model(food_codes: list[str], dish_codes: list[str], key: str = "ment
     component = create_model("Component", food_code=(food_lit, ...), grams=(float, ...))
     return create_model(
         "MentionResult",
-        **{key: (str, ...)},
+        mention=(str, ...),
         kind=(Kind, ...),
         food_code=(food_lit | None, Field(description="Single ingredient (kind=ingredient)")),
         dish_code=(dish_lit | None, Field(description="Known dish (kind=dish)")),

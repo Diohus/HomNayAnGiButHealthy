@@ -78,3 +78,24 @@ def register(client, email="a@example.com", profile=None):
 @pytest.fixture()
 def auth(client):
     return register(client)
+
+
+def log_intake(client, h, day, slot, food_code, grams):
+    """Ghi MỘT mục nhật ký qua POST /intake/batch (lô 1 mục)."""
+    d = day if isinstance(day, str) else day.isoformat()
+    return client.post("/api/intake/batch", json={"day": d, "entries": [
+        {"slot": slot, "food_code": food_code, "grams": grams}]}, headers=h)
+
+
+def intake_rows(engine, day) -> list[dict]:
+    """Nhật ký của một ngày đọc thẳng từ DB (ngày có thể chưa có thực đơn nên không đọc qua GET /menu)."""
+    from datetime import date
+
+    from sqlalchemy import select
+
+    from app.db import models as M
+
+    d = date.fromisoformat(day) if isinstance(day, str) else day
+    with engine.connect() as c:
+        rows = c.execute(select(M.IntakeEntry).where(M.IntakeEntry.day == d).order_by(M.IntakeEntry.id)).all()
+    return [{"id": r.id, "slot": r.slot, "food_code": r.food_code, "grams": r.grams, "source": r.source} for r in rows]

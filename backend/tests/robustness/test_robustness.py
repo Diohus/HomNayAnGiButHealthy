@@ -238,11 +238,11 @@ def test_llm_output_with_numbers_rejected():
 def test_llm_timeout_keeps_existing_recipe(client, auth, monkeypatch):
     gen(client, auth)
     good = {"steps": ["Hấp chín"], "seasonings": [{"name": "Gừng", "note": "thái sợi"}], "tip": "Ăn nóng"}
-    monkeypatch.setattr("app.api.routes.get_provider", lambda s: FakeProvider([good]))
+    monkeypatch.setattr("app.services.menu.get_provider", lambda s: FakeProvider([good]))
     r1 = client.post(f"/api/menu/{DAY}/meals/lunch/recipe", headers=auth).json()
     assert r1["source"] == "llm"
     before = client.get(f"/api/menu?start={DAY}", headers=auth).json()[0]
-    monkeypatch.setattr("app.api.routes.get_provider", lambda s: FakeProvider([LLMError("timeout")] * 3))
+    monkeypatch.setattr("app.services.menu.get_provider", lambda s: FakeProvider([LLMError("timeout")] * 3))
     r2 = client.post(f"/api/menu/{DAY}/meals/lunch/recipe", headers=auth)
     assert r2.status_code == 200 and r2.json()["kept_previous"] and r2.json()["steps"] == ["Hấp chín"]
     after = client.get(f"/api/menu?start={DAY}", headers=auth).json()[0]

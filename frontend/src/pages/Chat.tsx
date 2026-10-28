@@ -2,10 +2,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, post } from "../api/client";
-import { useFoodNames } from "../api/hooks";
+import { applyMenuResult, useFoodNames } from "../api/hooks";
 import { fmtKcal } from "../format";
+import { HelpLink } from "../components/Help";
 import { errorMessage, fmt, useI18n } from "../i18n";
-import type { ChatReply, ClarifyItem, Proposal } from "../types";
+import type { ChatReply, ClarifyItem, MenuDay, Proposal } from "../types";
 
 const CHAT_TIMEOUT_MS = 30_000; // quá 30 s ⇒ hủy yêu cầu (AbortController), mở khóa nút gửi
 
@@ -70,9 +71,10 @@ function ProposalCard({ p, onApplied }: { p: Proposal; onApplied: (m: string) =>
   async function apply() {
     setState("busy");
     try {
-      await post(`/chat/proposals/${p.id}/apply`);
+      const res = await post<{ menu: MenuDay | null }>(`/chat/proposals/${p.id}/apply`);
       setState("done");
-      await qc.invalidateQueries({ queryKey: [p.preference ? "dislikes" : "menu"] });
+      if (p.preference) await qc.invalidateQueries({ queryKey: ["dislikes"] });
+      else await applyMenuResult(qc, res);
       if (p.key === "log" || p.key === "rebalance") await qc.invalidateQueries({ queryKey: ["shopping"] });
       onApplied(p.preference ? t.chat.dislikeSaved : t.chat.applied);
     } catch (x) {
@@ -183,6 +185,7 @@ export function ChatPage() {
       <form className="composer" onSubmit={send}>
         <input aria-label={t.chat.message} value={text} maxLength={1000} placeholder={t.chat.placeholder} onChange={(e) => setText(e.target.value)} />
         <button type="submit" disabled={busy}>{t.chat.send}</button>
+        <HelpLink section="chat" compact />
       </form>
     </main>
   );

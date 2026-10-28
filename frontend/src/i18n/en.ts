@@ -1,4 +1,4 @@
-import type { Dict } from "./vi";
+import type { Dict, HelpSection } from "./vi";
 
 // English UI strings. Same keys as vi.ts (enforced by the Dict type and i18n.test.ts).
 export const en: Dict = {
@@ -283,6 +283,141 @@ export const en: Dict = {
     FILE_TOO_LARGE: "Images can be at most {max_mb} MB.",
     INVALID_IMAGE: "This file is not a valid image (JPEG, PNG or WebP only).",
     EXTRACTION_UNAVAILABLE: "The AI can't read documents right now. You can still enter limits by hand.",
+  },
+  help: {
+    title: "How to use Hôm Nay Ăn Gì",
+    entry: "User guide",
+    more: "See the guide",
+    back: "‹ Back",
+    login: "Log in",
+    banner: "New here? Read the 1-minute guide",
+    bannerClose: "Close",
+    intro: {
+      title: "What the app does",
+      paragraphs: [
+        "Hôm Nay Ăn Gì suggests a daily menu based on your body, goals, allergies and tastes. Nutrition figures come "
+          + "from the USDA database. Wherever the AI makes an estimate, the app labels it **\"AI estimate\"**.",
+        "**Note:** the app does not replace a doctor or dietitian. Menus are for reference only and have a margin of "
+          + "error.",
+      ],
+    },
+    sections: [
+      {
+        id: "start", title: "Get started in 3 steps", paragraphs: [],
+        steps: [
+          "**Sign up** with your email and a password (at least 8 characters).",
+          "**Fill in your profile:** sex, age, height, weight, activity level, goal (lose weight, maintain weight, gain "
+            + "muscle). Add health conditions, allergies and diets if you have any. The app works out your daily "
+            + "energy and nutrient needs.",
+          "Go to the **Today** tab and tap **Create menu**.",
+        ],
+      },
+      {
+        id: "today", title: "Today tab: the day's menu", paragraphs: [],
+        bullets: [
+          "Each meal shows the dish name, ingredients and weights (grams, raw/dry weight). The ring at the top shows "
+            + "how much you have eaten compared with your target.",
+          "**+ / −** next to an ingredient: increase or decrease its weight. The app keeps exactly what you set and "
+            + "rebalances the rest. Tap **Unpin** to let the app choose that weight again.",
+          "**Swap dish:** don't like this meal? Tap to change it to another dish. The other meals stay the same.",
+          "**How to cook:** the AI suggests how to cook it. Suggestions always avoid ingredients you are allergic to.",
+          "**Previous day / Next day:** view or create the menu for another day.",
+          "A main dish is never repeated more than 3 days in a row.",
+        ],
+      },
+      {
+        id: "log", title: "Logging what you ate", paragraphs: [],
+        bullets: [
+          "**Eaten:** if you ate exactly what the menu says, tap this button on that meal.",
+          "**+ Add something you ate:** if you ate something off the menu, search for it, enter the grams and add it to "
+            + "your log.",
+          "**📷 Snap your meal:** take or choose a photo, agree to send it to the AI, then tap **Analyse photo**. The "
+            + "app creates a draft with the foods and estimated grams. Check and correct it before logging. The app "
+            + "does not store the photo.",
+          "**Rebalance the remaining meals:** if you ate more or less than planned, tap this button. The app adjusts "
+            + "the meals you haven't eaten yet, and each one still keeps a minimum amount. The app never makes you "
+            + "make up for it the next day.",
+        ],
+      },
+      {
+        id: "week", title: "Week tab: 7-day overview",
+        paragraphs: [
+          "Tap **Week** in the Today tab to see your energy for the last 7 days against your target, and your daily "
+            + "average. The app lists nutrients you often fall short on (fibre, calcium, iron…) and suggests foods to "
+            + "make up for them. For a week with no log, the app uses your menus instead.",
+        ],
+      },
+      {
+        id: "chat", title: "Chat tab: talk as you would to a person",
+        paragraphs: ["Type naturally, with or without Vietnamese accents. For example:"],
+        bullets: [
+          "\"I just had beef phở for lunch\" → logs it and rebalances the later meals.",
+          "\"I want salmon for dinner tonight\" → suggests a menu with salmon.",
+          "\"I had 2 ice creams today\" → counts the ice cream in your day and suggests how to balance it.",
+          "\"I don't like bitter melon\" → adds it to your dislikes.",
+        ],
+        after: [
+          "Nothing changes until you tap **Apply**. If the chatbot asks \"which dish do you mean?\", pick the right one.",
+          "For a food that is not in our data (for example a packaged product), enter it from the **product label**: "
+            + "the name and the kcal, protein, carbs and fat per 100 g.",
+        ],
+      },
+      {
+        id: "pantry", title: "Pantry tab: ingredients you have at home",
+        paragraphs: [
+          "Add what you already have in the fridge, with the date and grams. Then **regenerate the menu** for that day "
+            + "so the app uses these ingredients first.",
+        ],
+      },
+      {
+        id: "shopping", title: "Shopping tab",
+        paragraphs: [
+          "Choose the start date, number of days and number of people. The app adds up the ingredients of the menus you "
+            + "have created and subtracts what you already have. Tap **Copy** or **Share** to send the list to "
+            + "whoever does the shopping.",
+        ],
+      },
+      {
+        id: "profile", title: "Profile tab", paragraphs: [],
+        bullets: [
+          "Edit your body details, goal, allergies and diets. The app recalculates your needs as soon as you save.",
+          "**Dislikes:** dishes or ingredients you'd rather not eat. The app uses them as little as possible but does "
+            + "not exclude them completely. Allergies are different: the app excludes them completely.",
+        ],
+      },
+      {
+        id: "settings", title: "Settings (⚙)", paragraphs: [],
+        bullets: [
+          "**Health limits:** if your doctor has given you limits (sodium, protein, potassium…), enter them by hand, "
+            + "take a photo or paste the text of the instructions. The AI reads the document and creates a draft. The "
+            + "AI can misread, so compare it with the original before saving.",
+          "**Appearance** (light/dark) and **Language** (Tiếng Việt/English).",
+          "**Download my data:** downloads a JSON file with all your data. The file contains health data, so keep it "
+            + "safe.",
+          "**Delete all my data:** deletes everything permanently; it cannot be recovered.",
+          "**Log out.**",
+        ],
+      },
+      {
+        id: "tips", title: "Tips", paragraphs: [],
+        bullets: [
+          "You can install the app on your phone: open it in the browser and choose **Add to Home Screen**.",
+          "When you are offline, the app still shows data it has already loaded but doesn't let you make changes.",
+          "If a menu misses a target, the app says which nutrients are short or over and suggests foods to add.",
+        ],
+      },
+      {
+        id: "faq", title: "Frequently asked questions", paragraphs: [],
+        bullets: [
+          "**Why can't I find dish X?** It may contain something you are allergic to, not fit your diet, or not be in "
+            + "our data yet. Try entering it from the product label in the Chat tab.",
+          "**How accurate are the numbers?** They are estimates from standard data. Real home-cooked dishes may differ. "
+            + "Salt and fish sauce added while cooking are not counted.",
+          "**Is my health data safe?** Your profile, limits and chat messages are all encrypted. Photos sent to the AI "
+            + "are not stored.",
+        ],
+      },
+    ] as HelpSection[],
   },
   unverified: "unverified",
   userProvided: "user-provided",

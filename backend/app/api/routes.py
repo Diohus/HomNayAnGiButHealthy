@@ -9,12 +9,11 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
 from app.ai.providers import get_provider
-from app.ai.recipes import generate_recipe
 from app.api.deps import current_user
 from app.core import ratelimit as RL
 from app.core.config import get_settings
 from app.core.errors import AppError
-from app.core.i18n import Lang, get_lang, name_of
+from app.core.i18n import Lang, get_lang
 from app.core.ratelimit import client_ip, limiter
 from app.core.security import (
     create_access_token,
@@ -227,10 +226,7 @@ def foods(uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_sessi
 
 @router.get("/dishes")
 def dishes(uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session)):
-    from app.db import foods_repo
-
-    return [{"code": d.code, "name_vi": d.name_vi, "name_en": d.name_en or d.name_vi, "main": d.main, "slots": d.slots}
-            for d in foods_repo.global_catalog(s).dishes.values()]
+    return FS.list_dishes(s)
 
 
 @router.post("/foods/custom", status_code=201)
@@ -241,11 +237,23 @@ def custom_food(body: FS.CustomFoodIn, uid: uuid.UUID = Depends(current_user), s
 
 
 # ---------------- thực đơn ----------------
-def _menu_out(s: Session, uid: uuid.UUID, day: date, lang: Lang = "vi") -> dict | None:
-    md = MS.get_day(s, uid, day)
-    if md is None:
-        return None
-    c = MS.Ctx(s, uid)
+def _menus_out(s: Session, uid: uuid.UUID, days: list[date], lang: Lang = "vi", c: MS.Ctx | None = None) -> list:
+    """Thực đơn nhiều ngày; `Ctx` (giải mã hồ sơ, lọc catalog) dựng MỘT lần, chỉ khi có ít nhất một ngày có thực đơn."""
+    out = []
+    for day in days:
+        md = MS.get_day(s, uid, day)
+        if md is not None:
+            c = c or MS.Ctx(s, uid)
+        out.append(_day_out(s, uid, md, lang, c) if md is not None else None)
+    return out
+
+
+def _menu_out(s: Session, uid: uuid.UUID, day: date, lang: Lang = "vi", c: MS.Ctx | None = None) -> dict | None:
+    return _menus_out(s, uid, [day], lang, c)[0]
+
+
+def _day_out(s: Session, uid: uuid.UUID, md: M.MenuDay, lang: Lang, c: MS.Ctx) -> dict:
+    day = md.day
     plan = MS.to_plan(md, c.full, c.tol)
     recipes = {m.slot: {**m.recipe.content, "source": m.recipe.source} for m in md.meals if m.recipe and m.active}
     inactive = [m.slot for m in md.meals if not m.active]
@@ -263,7 +271,7 @@ def get_menu(start: date, days: int = 1, uid: uuid.UUID = Depends(current_user),
              lang: Lang = LANG):
     if not 1 <= days <= 14:
         raise AppError(422, "DAYS_RANGE", key="error.DAYS_RANGE.view")
-    return [_menu_out(s, uid, start + timedelta(days=i), lang) for i in range(days)]
+    return _menus_out(s, uid, [start + timedelta(days=i) for i in range(days)], lang)
 
 
 class GenerateIn(BaseModel):
@@ -274,12 +282,13 @@ class GenerateIn(BaseModel):
 @router.post("/menu/generate")
 def generate(body: GenerateIn, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session),
              lang: Lang = LANG):
-    MS.generate(s, uid, body.start, body.days)
-    return [_menu_out(s, uid, body.start + timedelta(days=i), lang) for i in range(body.days)]
+    c = MS.Ctx(s, uid)
+    MS.generate(s, uid, body.start, body.days, c)
+    return _menus_out(s, uid, [body.start + timedelta(days=i) for i in range(body.days)], lang, c)
 
 
 class AdjustIn(BaseModel):
-    slot: str
+    slot: IN.Slot
     food_code: str
     delta_g: float
 
@@ -287,20 +296,24 @@ class AdjustIn(BaseModel):
 @router.post("/menu/{day}/adjust")
 def adjust(day: date, body: AdjustIn, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session),
            lang: Lang = LANG):
-    MS.adjust(s, uid, day, body.slot, body.food_code, body.delta_g)
-    return _menu_out(s, uid, day, lang)
+    limiter.hit(f"adjust:{uid}", *RL.ADJUST)  # mỗi lần chạy solver
+    c = MS.Ctx(s, uid)
+    MS.adjust(s, uid, day, body.slot, body.food_code, body.delta_g, c)
+    return _menu_out(s, uid, day, lang, c)
 
 
 class UnlockIn(BaseModel):
-    slot: str
+    slot: IN.Slot
     food_code: str
 
 
 @router.post("/menu/{day}/unlock")
 def unlock(day: date, body: UnlockIn, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session),
            lang: Lang = LANG):
-    MS.unlock(s, uid, day, body.slot, body.food_code)
-    return _menu_out(s, uid, day, lang)
+    limiter.hit(f"adjust:{uid}", *RL.ADJUST)  # mỗi lần chạy solver (chung hạn mức với +/−)
+    c = MS.Ctx(s, uid)
+    MS.unlock(s, uid, day, body.slot, body.food_code, c)
+    return _menu_out(s, uid, day, lang, c)
 
 
 # ---------------- nhật ký "đã ăn" ----------------
@@ -309,17 +322,10 @@ class EatenIn(BaseModel):
 
 
 @router.post("/menu/{day}/meals/{slot}/eaten")
-def eaten(day: date, slot: str, body: EatenIn, uid: uuid.UUID = Depends(current_user),
+def eaten(day: date, slot: IN.Slot, body: EatenIn, uid: uuid.UUID = Depends(current_user),
           s: Session = Depends(get_session), lang: Lang = LANG):
     IN.mark_eaten(s, uid, day, slot, body.eaten)
     return _menu_out(s, uid, day, lang)
-
-
-class IntakeIn(BaseModel):
-    day: date
-    slot: Literal["breakfast", "lunch", "dinner", "snack"]
-    food_code: str = Field(min_length=1, max_length=64)
-    grams: float
 
 
 @router.get("/summary/week")
@@ -329,17 +335,6 @@ def summary_week(end: date, uid: uuid.UUID = Depends(current_user), s: Session =
     return SUM.week(s, uid, end, lang)
 
 
-@router.get("/intake")
-def get_intake(day: date, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session)):
-    c = MS.Ctx(s, uid)
-    return IN.summary(s, uid, day, c.full)
-
-
-@router.post("/intake", status_code=201)
-def add_intake(body: IntakeIn, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session)):
-    return {"id": IN.add_entry(s, uid, body.day, body.slot, body.food_code, body.grams, "manual")}
-
-
 _PHOTO_FILE = File(...)
 _PHOTO_DAY = Form(...)
 _PHOTO_SLOT = Form(None)
@@ -347,7 +342,7 @@ _PHOTO_SLOT = Form(None)
 
 @router.post("/intake/photo")
 def intake_photo(file: UploadFile = _PHOTO_FILE, day: date = _PHOTO_DAY,
-                 slot: Literal["breakfast", "lunch", "dinner", "snack"] | None = _PHOTO_SLOT,
+                 slot: IN.Slot | None = _PHOTO_SLOT,
                  consent_ai_processing: bool = _CONSENT, uid: uuid.UUID = Depends(current_user),
                  s: Session = Depends(get_session), lang: Lang = LANG):
     """Ảnh bữa ăn ⇒ BẢN NHÁP nhật ký (không lưu ảnh, không ghi DB). Người dùng sửa rồi POST /intake/batch."""
@@ -361,10 +356,10 @@ def intake_photo(file: UploadFile = _PHOTO_FILE, day: date = _PHOTO_DAY,
 
 
 class BatchEntry(BaseModel):
-    slot: Literal["breakfast", "lunch", "dinner", "snack"]
+    slot: IN.Slot
     food_code: str = Field(min_length=1, max_length=64)
     grams: float
-    source: Literal["ai_estimate", "manual"] = "manual"
+    source: Literal["ai_estimate", "manual"] = "manual"  # "chat" chỉ ghi từ service (áp dụng đề xuất chat)
 
 
 class BatchIn(BaseModel):
@@ -374,7 +369,7 @@ class BatchIn(BaseModel):
 
 @router.post("/intake/batch", status_code=201)
 def add_intake_batch(body: BatchIn, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session)):
-    return {"ids": PH.add_batch(s, uid, body.day, [e.model_dump() for e in body.entries])}
+    return {"ids": IN.add_entries(s, uid, body.day, [e.model_dump() for e in body.entries])}
 
 
 @router.delete("/intake/{entry_id}", status_code=204)
@@ -387,8 +382,9 @@ def rebalance(day: date, uid: uuid.UUID = Depends(current_user), s: Session = De
               lang: Lang = LANG):
     """Cân lại các bữa CHƯA ăn theo nhật ký thực tế (giữ sàn mỗi bữa, tôn trọng guardrail rối loạn ăn uống)."""
     limiter.hit(f"swap:{uid}", *RL.SWAP)  # cùng hạn mức với đổi bữa (đều chạy solver)
-    IN.rebalance(s, uid, day)
-    return _menu_out(s, uid, day, lang)
+    c = MS.Ctx(s, uid)
+    IN.rebalance(s, uid, day, c)
+    return _menu_out(s, uid, day, lang, c)
 
 
 # ---------------- danh sách đi chợ ----------------
@@ -399,12 +395,13 @@ def shopping_list(start: date, days: int = 1, servings: int = 1, uid: uuid.UUID 
 
 
 @router.post("/menu/{day}/meals/{slot}/swap")
-def swap(day: date, slot: str, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session),
+def swap(day: date, slot: IN.Slot, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session),
          lang: Lang = LANG):
     """Đổi một bữa: sinh lại bữa đó, giữ nguyên các bữa khác."""
     limiter.hit(f"swap:{uid}", *RL.SWAP)  # mỗi lần chạy solver
-    MS.swap(s, uid, day, slot)
-    return _menu_out(s, uid, day, lang)
+    c = MS.Ctx(s, uid)
+    MS.swap(s, uid, day, slot, c)
+    return _menu_out(s, uid, day, lang, c)
 
 
 # ---------------- món / nguyên liệu không thích ----------------
@@ -431,32 +428,11 @@ def delete_dislike(pref_id: int, uid: uuid.UUID = Depends(current_user), s: Sess
 
 
 @router.post("/menu/{day}/meals/{slot}/recipe")
-def recipe(day: date, slot: str, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session),
+def recipe(day: date, slot: IN.Slot, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session),
            lang: Lang = LANG):
     """AI đề xuất cách chế biến. Lỗi/timeout LLM ⇒ giữ công thức cũ nếu có, nếu không dùng template."""
     limiter.hit(f"recipe:{uid}", *RL.RECIPE)  # mỗi lần gọi LLM trả phí
-    c = MS.Ctx(s, uid)
-    md = MS.get_day(s, uid, day)
-    meal = next((m for m in md.meals if m.slot == slot and m.active), None) if md else None
-    if meal is None:
-        raise AppError(404, "MEAL_NOT_FOUND")
-    # Tên món/nguyên liệu theo ngôn ngữ: LLM viết công thức cùng ngôn ngữ (bộ lọc dị ứng kiểm tra cả vi + en)
-    dish = name_of(c.full.dishes[meal.dish_code], lang) if meal.dish_code in c.full.dishes else None
-    names = [name_of(c.full.food(i.ingredient_code), lang) for i in meal.items if i.ingredient_code in c.full.foods]
-    settings = get_settings()
-    r = generate_recipe(get_provider(settings), dish, names, c.profile.allergies, c.profile.diets,
-                        low_sodium=Condition.hypertension in c.profile.conditions,
-                        max_retries=settings.llm_max_retries, lang=lang, avoid=PREF.text_dislikes(s, uid))
-    if r.source == "template" and meal.recipe is not None:
-        return {**meal.recipe.content, "source": meal.recipe.source, "kept_previous": True}
-    content = r.model_dump(exclude={"source"})
-    if meal.recipe is None:
-        meal.recipe = M.Recipe(content=content, source=r.source)
-    else:
-        # Cập nhật tại chỗ: thay object mới ⇒ SQLAlchemy INSERT trước DELETE (orphan) ⇒ vi phạm UNIQUE(meal_id)
-        meal.recipe.content, meal.recipe.source, meal.recipe.created_at = content, r.source, datetime.now(UTC)
-    s.commit()
-    return r.model_dump()
+    return MS.recipe(s, uid, day, slot, lang)
 
 
 # ---------------- nguyên liệu có sẵn ----------------
@@ -468,8 +444,7 @@ class PantryIn(BaseModel):
 
 @router.get("/pantry")
 def pantry(day: date, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session)):
-    rows = s.scalars(select(M.PantryItem).where(M.PantryItem.user_id == uid, M.PantryItem.day == day)).all()
-    return [{"id": r.id, "food_code": r.ingredient_code, "grams": r.grams} for r in rows]
+    return MS.list_pantry(s, uid, day)
 
 
 @router.post("/pantry", status_code=201)
@@ -479,8 +454,7 @@ def add_pantry(body: PantryIn, uid: uuid.UUID = Depends(current_user), s: Sessio
 
 @router.delete("/pantry/{item_id}", status_code=204)
 def del_pantry(item_id: int, uid: uuid.UUID = Depends(current_user), s: Session = Depends(get_session)):
-    s.execute(delete(M.PantryItem).where(M.PantryItem.id == item_id, M.PantryItem.user_id == uid))
-    s.commit()
+    MS.delete_pantry(s, uid, item_id)
 
 
 # ---------------- chatbot ----------------

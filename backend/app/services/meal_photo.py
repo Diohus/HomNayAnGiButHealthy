@@ -21,11 +21,9 @@ from app.core.i18n import resolve as tr_value
 from app.foods.matching import find_dishes, find_foods
 from app.foods.resolve import resolve_mentions
 from app.foods.restrictions import exclusion_reason, reason_msg
-from app.services import intake as IN
 from app.services import menu as MS
 
 MAX_ITEMS = 8
-BATCH_MAX = 20
 
 
 class PhotoItem(BaseModel):
@@ -104,17 +102,3 @@ def analyze(s: Session, user_id: uuid.UUID, provider: LLMProvider | None, image_
             entries.append({"food_code": code, "name": name_of(f, lang), "grams": _clamp(f, g),
                             "confidence": round(min(conf, conf_r), 2), "source": "ai_estimate", "seen_as": name})
     return {"entries": entries, "unresolved": unresolved, "rejected": rejected, "is_food_photo": True}
-
-
-def add_batch(s: Session, user_id: uuid.UUID, day, entries: list[dict]) -> list[int]:
-    """Ghi nhiều mục nhật ký: tất cả hoặc không gì cả (dị ứng/khối lượng sai ở MỘT mục ⇒ không ghi mục nào)."""
-    if not 1 <= len(entries) <= BATCH_MAX:
-        raise AppError(422, "INTAKE_BATCH_SIZE", params={"max": BATCH_MAX})
-    try:
-        ids = [IN.add_entry(s, user_id, day, e["slot"], e["food_code"], e["grams"], e["source"], commit=False)
-               for e in entries]
-    except AppError:
-        s.rollback()
-        raise
-    s.commit()
-    return ids

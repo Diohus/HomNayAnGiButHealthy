@@ -40,7 +40,8 @@ export function IntakePanel({ md, day, busy, onChanged, onRebalance }: {
     if (!code) return;
     setErr(null);
     try {
-      await post("/intake", { day, slot, food_code: code, grams: Number(grams) });
+      await post("/intake/batch",
+                 { day, entries: [{ slot, food_code: code, grams: Number(grams), source: "manual" }] });
       setQ("");
       setCode(null);
       setOpen(false);

@@ -10,7 +10,7 @@ from app.core import ratelimit as RL
 from app.db import models as M
 from app.foods import resolve as RS
 from tests.api.test_health_limits import _png
-from tests.conftest import BASE_PROFILE, register
+from tests.conftest import BASE_PROFILE, intake_rows, register
 
 DAY = "2026-10-21"
 URL = "/api/intake/photo"
@@ -122,7 +122,7 @@ def test_batch_writes_all(client, auth, engine):
         {"slot": "lunch", "food_code": "pork_ribs", "grams": 120, "source": "ai_estimate"}]}
     r = client.post("/api/intake/batch", json=body, headers=auth)
     assert r.status_code == 201 and len(r.json()["ids"]) == 2
-    entries = client.get(f"/api/intake?day={DAY}", headers=auth).json()["entries"]
+    entries = intake_rows(engine, DAY)
     assert {e["source"] for e in entries} == {"ai_estimate"} and _count(engine) == 2
 
 

@@ -46,3 +46,16 @@ def reason_msg(reason: str | None):
     if kind == "diet":
         return Msg("reason.diet", {"name": Msg(f"diet.{code}")})
     return Msg("reason.unknown")
+
+
+def ensure_allowed(food, allowed, profile) -> None:
+    """Nguyên liệu không có trong catalog đã lọc (`allowed`) ⇒ AppError 422 ALLERGEN_CONFLICT kèm lý do đã dịch.
+    Dùng chung cho ghi nhật ký, +/- nguyên liệu, thêm đồ có sẵn."""
+    if food.code in allowed.foods:
+        return
+    from app.core.errors import AppError
+    from app.core.i18n import names
+
+    reason = exclusion_reason(food, profile.allergies, profile.diets) or ""
+    raise AppError(422, "ALLERGEN_CONFLICT", key="error.ALLERGEN_CONFLICT.item",
+                   params={"food": names(food), "reason": reason_msg(reason)}, reason=reason)

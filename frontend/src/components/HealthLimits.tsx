@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { del, postForm, put } from "../api/client";
 import { useHealthLimits } from "../api/hooks";
+import { HelpLink } from "./Help";
 import { errorMessage, fmt, useI18n } from "../i18n";
 import { LIMIT_FIELDS, type ExtractDraft, type HealthLimitRow, type LimitField } from "../types";
 
@@ -40,7 +41,7 @@ export function HealthLimitsSection() {
   return (
     <section id="health-limits">
       <h2>{t.limits.title}</h2>
-      <p className="small muted">{t.limits.help}</p>
+      <p className="small muted">{t.limits.help} <HelpLink section="settings" /></p>
       {(list.data ?? []).map((row) => (
         <LimitRow key={row.id} row={row} onEdit={() => setEditing({ condition: row.condition, source: row.source,
                                                                      vals: toVals(row.limits) })}

@@ -100,3 +100,25 @@ describe("upload ảnh (FormData)", () => {
     expect(init.body).toBe(form);
   });
 });
+
+describe("logout", () => {
+  it("gọi POST /auth/logout với refresh token hiện tại rồi xóa token", async () => {
+    const { logout, setTokens, hasSession } = await load();
+    setTokens("at-2", "rt-1");
+    await logout();
+    expect(calls).toHaveLength(1);
+    expect(calls[0].url).toBe("/api/auth/logout");
+    expect(JSON.parse(calls[0].body!)).toEqual({ refresh_token: "rt-1" });
+    expect(localStorage.getItem("hnag_refresh")).toBeNull();
+    expect(hasSession()).toBe(false);
+  });
+
+  it("request lỗi mạng ⇒ vẫn xóa token", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("network"); }));
+    const { logout, setTokens, hasSession } = await load();
+    setTokens("at-2", "rt-1");
+    await expect(logout()).resolves.toBeUndefined();
+    expect(localStorage.getItem("hnag_refresh")).toBeNull();
+    expect(hasSession()).toBe(false);
+  });
+});

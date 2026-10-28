@@ -7,6 +7,7 @@ import { useProfile } from "./api/hooks";
 import { I18nProvider, useI18n } from "./i18n";
 import { AuthPage } from "./pages/Auth";
 import { ChatPage } from "./pages/Chat";
+import { HelpPage } from "./pages/Help";
 import { PantryPage } from "./pages/Pantry";
 import { ProfilePage } from "./pages/Profile";
 import { SettingsPage } from "./pages/Settings";
@@ -81,6 +82,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<AuthPage />} />
+          <Route path="/help" element={<HelpPage />} />
           <Route path="/onboarding" element={<Shell><ProfilePage onboarding /></Shell>} />
           <Route path="/" element={<Shell><TodayPage /></Shell>} />
           <Route path="/week" element={<Shell><WeekPage /></Shell>} />

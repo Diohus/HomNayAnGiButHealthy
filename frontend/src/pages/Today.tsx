@@ -2,6 +2,7 @@ import { useState } from "react";
 import { post } from "../api/client";
 import { generateDay, useDishNames, useMenu, useMenuMutation, useNeeds } from "../api/hooks";
 import { DaySummary } from "../components/DaySummary";
+import { HelpBanner, HelpLink } from "../components/Help";
 import { IntakePanel } from "../components/IntakePanel";
 import { MealCard } from "../components/MealCard";
 import { Notices } from "../components/Notices";
@@ -41,6 +42,7 @@ export function TodayPage() {
   return (
     <main>
       <ViewSwitch />
+      <HelpBanner />
       <div className="daynav">
         <button className="secondary" onClick={() => setDay(addDays(day, -1))} aria-label={t.today.prevDay}>‹</button>
         <h2>{day === isoDay(new Date()) ? t.today.today : fmtDate(day)}</h2>
@@ -55,7 +57,7 @@ export function TodayPage() {
       ) : null}
       {!md && !menu.isLoading && (
         <div className="card center">
-          <p>{t.today.empty}</p>
+          <p>{t.today.empty} <HelpLink section="today" /></p>
           <button disabled={busy} onClick={() => run(gen, undefined)}>{t.today.generate}</button>
         </div>
       )}

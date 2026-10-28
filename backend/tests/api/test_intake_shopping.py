@@ -6,7 +6,7 @@ import pytest
 
 from app.ai import recipes as R
 from app.chat.parser import parse, rule_parse
-from tests.conftest import BASE_PROFILE, register
+from tests.conftest import BASE_PROFILE, intake_rows, log_intake, register
 from tests.robustness.test_robustness import FakeProvider
 
 DAY = date(2026, 10, 21)
@@ -46,17 +46,17 @@ def test_mark_eaten_and_unmark(client, auth, catalog):
 
 def test_off_plan_intake_crud_and_totals(client, auth, catalog):
     gen(client, auth)
-    r = client.post("/api/intake", json={"day": DAY.isoformat(), "slot": "snack", "food_code": "banana",
-                                         "grams": 120}, headers=auth)
+    r = log_intake(client, auth, DAY, "snack", "banana", 120)
     assert r.status_code == 201
-    eid = r.json()["id"]
-    got = client.get(f"/api/intake?day={DAY}", headers=auth).json()
+    eid = r.json()["ids"][0]
+    got = client.get(f"/api/menu?start={DAY}", headers=auth).json()[0]["intake"]
     assert got["entries"][0]["source"] == "manual"
     assert got["totals"]["energy_kcal"] == pytest.approx(catalog.food("banana").nutrient("energy_kcal", 120))
     for bad, code in [({"grams": 0}, "GRAMS_RANGE"), ({"grams": 5000}, "GRAMS_RANGE"),
                       ({"food_code": "unicorn"}, "FOOD_NOT_FOUND")]:
-        body = {"day": DAY.isoformat(), "slot": "snack", "food_code": "banana", "grams": 100, **bad}
-        assert client.post("/api/intake", json=body, headers=auth).json()["code"] == code
+        e = {"slot": "snack", "food_code": "banana", "grams": 100, **bad}
+        body = {"day": DAY.isoformat(), "entries": [e]}
+        assert client.post("/api/intake/batch", json=body, headers=auth).json()["code"] == code
     other = register(client, email="o@example.com")
     assert client.delete(f"/api/intake/{eid}", headers=other).status_code == 404
     assert client.delete(f"/api/intake/{eid}", headers=auth).status_code == 204
@@ -64,8 +64,7 @@ def test_off_plan_intake_crud_and_totals(client, auth, catalog):
 
 def test_intake_allergy_rejected(client):
     h = register(client, profile={**BASE_PROFILE, "allergies": ["shellfish"]})
-    r = client.post("/api/intake", json={"day": DAY.isoformat(), "slot": "lunch", "food_code": "shrimp",
-                                         "grams": 100}, headers={**h, **EN})
+    r = log_intake(client, {**h, **EN}, DAY, "lunch", "shrimp", 100)
     assert r.status_code == 422 and r.json()["code"] == "ALLERGEN_CONFLICT"
     assert r.json()["params"] == {"food": "Shrimp", "reason": "shellfish allergy"}
 
@@ -75,8 +74,7 @@ def test_intake_deleted_with_account(client, auth, engine):
 
     from app.db import models as M
 
-    client.post("/api/intake", json={"day": DAY.isoformat(), "slot": "snack", "food_code": "banana", "grams": 100},
-                headers=auth)
+    log_intake(client, auth, DAY, "snack", "banana", 100)
     client.delete("/api/me", headers=auth)
     with engine.connect() as c:
         assert c.execute(select(func.count()).select_from(M.IntakeEntry)).scalar() == 0
@@ -87,8 +85,7 @@ def test_rebalance_keeps_eaten_and_floors_rest(client, auth, catalog):
     before = meals(gen(client, auth)[0])
     client.post(f"/api/menu/{DAY}/meals/breakfast/eaten", json={"eaten": True}, headers=auth)
     # ăn ngoài kế hoạch khá nhiều ⇒ các bữa còn lại phải giảm, nhưng không dưới sàn 50 % phần của bữa
-    client.post("/api/intake", json={"day": DAY.isoformat(), "slot": "snack", "food_code": "chocolate_cake",
-                                     "grams": 256}, headers=auth)
+    log_intake(client, auth, DAY, "snack", "chocolate_cake", 256)
     r = client.post(f"/api/menu/{DAY}/rebalance", headers=auth)
     assert r.status_code == 200, r.text
     after = meals(r.json())
@@ -104,8 +101,7 @@ def test_rebalance_keeps_eaten_and_floors_rest(client, auth, catalog):
 
 def test_rebalance_over_target_reports_and_no_carry_over(client, auth):
     gen(client, auth)
-    client.post("/api/intake", json={"day": DAY.isoformat(), "slot": "snack", "food_code": "cheese_pizza",
-                                     "grams": 2000}, headers=auth)
+    log_intake(client, auth, DAY, "snack", "cheese_pizza", 2000)
     r = client.post(f"/api/menu/{DAY}/rebalance", headers=auth).json()
     assert any(w.startswith("OVER_TARGET:") for w in r["plan"]["warnings"])
     assert r["energy_adjustment_kcal"] == 0
@@ -118,8 +114,7 @@ def test_rebalance_blocked_when_ed_flagged(client, auth, engine):
     from app.db import session as dbs
 
     gen(client, auth)
-    client.post("/api/intake", json={"day": DAY.isoformat(), "slot": "snack", "food_code": "cheese_pizza",
-                                     "grams": 1000}, headers=auth)
+    log_intake(client, auth, DAY, "snack", "cheese_pizza", 1000)
     with dbs._SessionLocal() as s:  # gắn cờ: 1 sự kiện DISTRESS
         uid = s.query(M.User).first().id
         s.add(M.SafetyEvent(user_id=uid, kind="DISTRESS", at=datetime.now(UTC)))
@@ -141,15 +136,15 @@ def test_rule_log_intent(text):
     assert rule_parse(text).intent == "log_food"
 
 
-def test_chat_log_apply_then_rebalance(client, auth):
+def test_chat_log_apply_then_rebalance(client, auth, engine):
     gen(client, auth)
     r = client.post("/api/chat", json={"message": "tôi vừa ăn 2 quả chuối"}, headers=auth).json()
     log_id, reb_id = (p["id"] for p in r["proposals"])
     day = r["proposals"][0]["day"]
     a = client.post(f"/api/chat/proposals/{log_id}/apply", headers=auth)
     assert a.status_code == 200
-    got = client.get(f"/api/intake?day={day}", headers=auth).json()
-    assert got["entries"][0]["food_code"] == "banana" and got["entries"][0]["source"] == "chat"
+    got = intake_rows(engine, day)
+    assert got[0]["food_code"] == "banana" and got[0]["source"] == "chat"
     b = client.post(f"/api/chat/proposals/{reb_id}/apply", headers=auth)
     assert b.status_code in (200, 404)  # 404 MENU_NOT_FOUND nếu hôm nay (giờ thật) chưa có thực đơn
 
@@ -218,7 +213,7 @@ def test_text_dislike_api_and_recipe_avoids(client, auth, monkeypatch):
     gen(client, auth)
     bad = {"steps": ["Phi hành cho thơm rồi áp chảo"], "seasonings": [{"name": "Hành lá", "note": "rắc"}], "tip": ""}
     fp = FakeProvider([bad, bad, bad])
-    monkeypatch.setattr("app.api.routes.get_provider", lambda s: fp)
+    monkeypatch.setattr("app.services.menu.get_provider", lambda s: fp)
     out = client.post(f"/api/menu/{DAY}/meals/lunch/recipe", headers=auth).json()
     assert fp.calls == 3 and out["source"] == "template"
     text = " ".join([*out["steps"], *(f"{s['name']} {s['note']}" for s in out["seasonings"]), out["tip"]])

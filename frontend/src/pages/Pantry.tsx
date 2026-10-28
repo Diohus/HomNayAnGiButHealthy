@@ -3,6 +3,7 @@ import { useState } from "react";
 import { api, del, post } from "../api/client";
 import { useFoodNames, useFoods } from "../api/hooks";
 import { isoDay } from "../format";
+import { HelpLink } from "../components/Help";
 import { errorMessage, fmt, useI18n } from "../i18n";
 
 export function PantryPage() {
@@ -39,6 +40,7 @@ export function PantryPage() {
   return (
     <main>
       <h2>{t.pantry.title}</h2>
+      <p><HelpLink section="pantry" /></p>
       <form className="card form" onSubmit={add}>
         <label>{t.pantry.day}<input type="date" value={day} onChange={(e) => setDay(e.target.value)} /></label>
         <label>{t.pantry.food}

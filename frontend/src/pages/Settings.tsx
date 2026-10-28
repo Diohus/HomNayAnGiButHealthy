@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { del, post, setTokens } from "../api/client";
+import { Link, useNavigate } from "react-router-dom";
+import { del, logout, post, setTokens } from "../api/client";
 import { LanguagePicker, ThemePicker } from "../components/Choice";
 import { HealthLimitsSection } from "../components/HealthLimits";
 import { isoDay } from "../format";
@@ -63,8 +63,14 @@ export function SettingsPage() {
     qc.clear();
     nav("/login");
   }
+  async function signOut() {
+    await logout();
+    qc.clear();
+    nav("/login");
+  }
   return (
     <main>
+      <p className="card"><Link to="/help">{t.help.entry}</Link></p>
       <HealthLimitsSection />
       <h2>{t.nav.settings}</h2>
       <div className="card">
@@ -77,7 +83,7 @@ export function SettingsPage() {
       </div>
       <div className="card">
         <button className="danger" onClick={deleteAll}>{t.settings.deleteAll}</button>
-        <button className="link" onClick={() => { setTokens(null, null); qc.clear(); nav("/login"); }}>{t.logout}</button>
+        <button className="link" onClick={signOut}>{t.logout}</button>
       </div>
     </main>
   );

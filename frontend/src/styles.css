@@ -138,3 +138,13 @@ ul.plain li { margin-bottom: 8px; }
 .ring-planned { stroke: var(--accent); opacity: .25; }
 .meal.eaten { opacity: .8; }
 .done { text-decoration: line-through; color: var(--muted); }
+/* Vòng 11: trang Hướng dẫn + lối vào */
+.help-top { margin: 4px 0; }
+.help details summary { cursor: pointer; padding: 2px 0; }
+.help details[open] summary { margin-bottom: 8px; }
+.help ol, .help ul { padding-left: 20px; margin: 8px 0; }
+.help li { margin-bottom: 6px; }
+.help p { margin: 8px 0; line-height: 1.5; }
+.help a, .help-link, .help-banner a { color: var(--accent-2); }
+.help-banner { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.help-q { flex: none; align-self: center; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 50%; color: var(--accent-2); text-decoration: none; font-weight: 600; }

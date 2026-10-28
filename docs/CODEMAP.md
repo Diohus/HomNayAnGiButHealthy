@@ -1,7 +1,7 @@
 # CODEMAP — Bản đồ mã nguồn HomNayAnGi
 
 > Mục đích: cho AI/dev đọc để hiểu dự án **mà không cần đọc lại toàn bộ code**. Mô tả từng thư mục/file, vai trò, hàm chính và **kiểu dữ liệu đầu ra**.
-> Cập nhật lần cuối: 2026-10-27. Khi sửa code, hãy cập nhật file này cho khớp.
+> Cập nhật lần cuối: 2026-10-28 (vòng 10: dọn code; vòng 11: trang Hướng dẫn `/help`). Khi sửa code, hãy cập nhật file này cho khớp.
 > Tài liệu liên quan: [ARCHITECTURE.md](ARCHITECTURE.md) (thiết kế), [ASSUMPTIONS.md](ASSUMPTIONS.md) (giả định), [DATA_SOURCES.md](DATA_SOURCES.md) (nguồn số liệu), [../work.txt](../work.txt) (yêu cầu gốc).
 
 ---
@@ -33,7 +33,7 @@ HomNayAnGiButHealthy/
 ├── .gitignore
 ├── docker-compose.yml      4 service: db (postgres16), backend, frontend (nginx), caddy (HTTPS)
 ├── deploy/Caddyfile        Reverse proxy HTTPS → frontend:80, header bảo mật, không access log
-├── docs/                   ARCHITECTURE / ASSUMPTIONS / DATA_SOURCES / CODEMAP (file này)
+├── docs/                   ARCHITECTURE / ASSUMPTIONS / DATA_SOURCES / CODEMAP (file này) / USER_GUIDE (nội dung trang /help)
 ├── backend/
 │   ├── Dockerfile          python:3.11-slim; CMD: alembic upgrade head → python -m app.seed → uvicorn
 │   ├── pyproject.toml      deps; extra [dev]=pytest,ruff; extra [claude]=anthropic
@@ -149,21 +149,30 @@ HomNayAnGiButHealthy/
 | DELETE `/health-limits/{id}` (204) | — | 404 `LIMIT_NOT_FOUND` |
 | POST `/health-limits/extract` (multipart) | `file` (ảnh ≤ 5 MB) **hoặc** `text` (≤ 5000), `consent_ai_processing=true` | bản nháp `{limits, items[quote], rejected, other_instructions, language}`, không lưu; 422 `AI_CONSENT_REQUIRED`/`EXTRACT_INPUT_REQUIRED`/`TEXT_TOO_LONG`/`INVALID_IMAGE`, 413 `FILE_TOO_LARGE`, 503 `EXTRACTION_UNAVAILABLE`, 429 (5/giờ) |
 | GET `/foods` | — | `[Food + {role, excluded_reason}]` (gồm cả món bị loại, có lý do) |
-| GET `/dishes` | — | `[{code, name_vi, main, slots}]` |
+| GET `/dishes` | — | `[{code, name_vi, name_en, main, slots}]` (`FS.list_dishes`) |
 | POST `/foods/custom` (201) | `CustomFoodIn` | `{code, name_vi}`; 422 `ALLERGEN_CONFLICT` |
 | GET `/menu?start=YYYY-MM-DD&days=1..14` | — | `[MenuOut | null]` mỗi ngày |
 | POST `/menu/generate` | `{start, days 1..7}` | `[MenuOut]` (không còn chặn bệnh nền nhạy cảm từ vòng 4) |
-| POST `/menu/{day}/adjust` | `{slot, food_code, delta_g}` | `MenuOut`; lỗi `MENU_NOT_FOUND`, `ITEM_NOT_FOUND`, `ALLERGEN_CONFLICT`, `PANTRY_ITEM`, `DELTA_RANGE`, `ED_SUPPORT` |
-| POST `/menu/{day}/unlock` | `{slot, food_code}` | `MenuOut` |
-| POST `/menu/{day}/meals/{slot}/recipe` | — | `Recipe {steps, seasonings[{name,note}], tip, source}`; nếu LLM lỗi và đã có công thức cũ → công thức cũ + `kept_previous: true` |
-| GET `/pantry?day=` | — | `[{id, food_code, grams}]` |
+| POST `/menu/{day}/adjust` | `{slot: Slot, food_code, delta_g}` | `MenuOut`; lỗi `MENU_NOT_FOUND`, `ITEM_NOT_FOUND`, `ALLERGEN_CONFLICT`, `PANTRY_ITEM`, `DELTA_RANGE`, `ED_SUPPORT`; 429 (`RL.ADJUST` 60/phút, chung với unlock) |
+| POST `/menu/{day}/unlock` | `{slot: Slot, food_code}` | `MenuOut`; 429 (`RL.ADJUST`) |
+| POST `/menu/{day}/meals/{slot}/eaten` | `{eaten}` | `MenuOut`; 404 `MEAL_NOT_FOUND` |
+| POST `/menu/{day}/meals/{slot}/swap` | — | `MenuOut`; 409 `NO_ALTERNATIVE`; 429 (`RL.SWAP` 20/phút, chung với rebalance) |
+| POST `/menu/{day}/rebalance` | — | `MenuOut`; 409 `NOTHING_TO_REBALANCE`/`ED_SUPPORT`; 429 (`RL.SWAP`) |
+| POST `/menu/{day}/meals/{slot}/recipe` | — | `Recipe {steps, seasonings[{name,note}], tip, source}`; nếu LLM lỗi và đã có công thức cũ → công thức cũ + `kept_previous: true` (`MS.recipe`) |
+| POST `/intake/batch` (201) | `{day, entries: [{slot: Slot, food_code, grams, source: manual\|ai_estimate}]}` (1..20 mục) | `{ids}`; tất cả hoặc không: 422 `INTAKE_BATCH_SIZE`/`SLOT_INVALID`/`GRAMS_RANGE`/`ALLERGEN_CONFLICT`, 404 `FOOD_NOT_FOUND`. Ghi một mục = lô 1 mục (đã bỏ `POST /intake` và `GET /intake`; nhật ký đọc qua `GET /menu` → `intake`) |
+| DELETE `/intake/{id}` (204) | — | 404 `INTAKE_NOT_FOUND` |
+| POST `/intake/photo` (multipart) | `file`, `day`, `slot?`, `consent_ai_processing=true` | bản nháp `{entries, unresolved, rejected, is_food_photo, day, slot}`, không ghi DB |
+| GET `/summary/week?end=` | — | tổng quan 7 ngày (`SUM.week`) |
+| GET `/pantry?day=` | — | `[{id, food_code, grams}]` (`MS.list_pantry`) |
 | POST `/pantry` (201) | `{day, food_code, grams}` | `{warnings: ["PANTRY_EXCEEDS_ENERGY"?]}`; 422 `GRAMS_RANGE`/`ALLERGEN_CONFLICT`, 404 `FOOD_NOT_FOUND` |
-| DELETE `/pantry/{id}` (204) | — | — |
+| DELETE `/pantry/{id}` (204) | — | — (`MS.delete_pantry`, chỉ xóa đồ của chính user) |
 | POST `/chat` | `{message}` | `{kind, text, parser, detected[], unknown_mentions[], proposals[{id,key,label,day,plan,compensation}]}` |
 | GET `/chat/history` | — | `[{id, role, at, text, kind?}]` (50 tin gần nhất) |
 | POST `/chat/proposals/{id}/apply` | — | `{day, version, regenerated_days[], menu: MenuOut}`; 404/409 `PROPOSAL_NOT_FOUND`/`PROPOSAL_APPLIED`/`PROPOSAL_EXPIRED`/`STALE_PROPOSAL`/`ROTATION_VIOLATION`/`ED_SUPPORT` |
 
-`MenuOut` (hàm `_menu_out`): `{day, version, plan: DayPlan, targets: [PlannerTarget], recipes: {slot: Recipe}, inactive_meals: [slot], energy_adjustment_kcal, notices}`.
+`MenuOut` (hàm `_menu_out(s, uid, day, lang, c=None)` / `_menus_out(s, uid, days, lang, c=None)`): `{day, version, plan: DayPlan, targets: [PlannerTarget], recipes: {slot: Recipe}, inactive_meals: [slot], intake: {entries, totals}, eaten_slots, energy_adjustment_kcal, notices}`. `MS.Ctx` dựng **một lần** mỗi request (nhiều ngày dùng chung; route sửa thực đơn dựng `c` rồi truyền cho service và `_menu_out`); ngày không có thực đơn ⇒ `null` và không cần dựng `Ctx`.
+
+`Slot` = `Literal["breakfast","lunch","dinner","snack"]` (`services/intake.py`): slot sai trong path/body ⇒ 422 `VALIDATION_ERROR`.
 
 > Lưu ý: logic nghiệp vụ nằm ở `services/`; route chỉ parse + gọi service + định dạng. Thêm endpoint mới: theo mẫu này.
 
@@ -197,7 +206,7 @@ HomNayAnGiButHealthy/
 - `FoodCatalog(foods, dishes)`: `.foods: dict`, `.dishes: dict`; `food(code)`, `with_foods(extra) -> FoodCatalog`, `role(code) -> "main"|"side"|"snack"` (main = là nguyên liệu chính của một món nào đó), `filtered(allergies, diets) -> FoodCatalog` (loại món nếu nguyên liệu chính bị loại). Validate món tham chiếu nguyên liệu tồn tại.
 - `load_seed_catalog() -> FoodCatalog` (đọc JSON trực tiếp, dùng trong test planner).
 
-**`restrictions.py`**: `ALLERGEN_TAGS`, `DIET_EXCLUDED_TAGS` (vegetarian loại meat/fish/shellfish; vegan loại animal; halal/no_pork loại pork; no_beef loại beef; gluten_free loại gluten). `exclusion_reason(food, allergies, diets) -> "allergy:<x>"|"diet:<x>"|None`. **Nguồn sự thật duy nhất** cho lọc.
+**`restrictions.py`**: `ALLERGEN_TAGS`, `DIET_EXCLUDED_TAGS` (vegetarian loại meat/fish/shellfish; vegan loại animal; halal/no_pork loại pork; no_beef loại beef; gluten_free loại gluten). `exclusion_reason(food, allergies, diets) -> "allergy:<x>"|"diet:<x>"|None`. **Nguồn sự thật duy nhất** cho lọc. `ensure_allowed(food, allowed_catalog, profile)`: không thuộc catalog đã lọc ⇒ `AppError(422, "ALLERGEN_CONFLICT", key="error.ALLERGEN_CONFLICT.item", params={food, reason})` — dùng chung cho nhật ký, +/−, đồ có sẵn.
 
 **`matching.py`** (so khớp tên trong câu chat, không LLM):
 - `normalize(text, keep_diacritics=False) -> str` (có khoảng trắng 2 đầu), `has_diacritics(text)`.
@@ -271,16 +280,19 @@ Khi flagged: không cắt giảm thêm (adjust −, low target), không bù chea
 - `energy_delta(s, uid, day) -> float`, `energy_target(s, uid, needs, day) -> float`, `targets_for(s, uid, needs, day, energy_override=None) -> list[PlannerTarget]`.
 - `get_day(s, uid, day) -> MenuDay|None`; `to_plan(md, catalog, tol, include_inactive=False) -> DayPlan` (tổng tính lại từ nguyên liệu); `save_plan(s, uid, plan, targets) -> MenuDay` (tăng version, giữ bữa inactive, xóa recipe nếu cấu trúc đổi, xóa bữa snack nếu không còn).
 - `mains_by_date(s, uid, center) -> dict[date, set[dish]]`; `locked_items(s, uid, day, md) -> list[LockedItem]` (items locked + pantry của ngày).
-- **`Ctx(s, uid, lang)`**: nạp `profile, needs, no_limits, full, catalog, tol` (`no_limits` chỉ để hiện notice); `solve(day, required=None, snacks=None, energy_override=None, keep_structure=False, min_meal_energy=None) -> (DayPlan, targets)` — dựng `PlanRequest` đầy đủ (rotation, recent, locked, structure, low GI cho tiểu đường).
-- `generate(s, uid, start, days) -> list[DayPlan]` (tuần tự để ngày sau thấy món ngày trước).
-- `adjust(s, uid, day, slot, food_code, delta_g) -> DayPlan` (khóa item ở gram mới, rebalance giữ cấu trúc; ghi `DECREASE_WHEN_MET`).
-- `unlock(s, uid, day, slot, food_code) -> DayPlan`.
-- `add_pantry(s, uid, day, food_code, grams) -> list[warning]`.
+- **`Ctx(s, uid, lang)`**: nạp `profile, needs, no_limits, full, catalog, tol` (`no_limits` chỉ để hiện notice); `solve(day, required=None, snacks=None, energy_override=None, keep_structure=False, min_meal_energy=None) -> (DayPlan, targets)` — dựng `PlanRequest` đầy đủ (rotation, recent, locked, structure, low GI cho tiểu đường). Ghi DB sau khi dựng không làm `Ctx` sai (hồ sơ/catalog không đổi; `energy_delta`, `recent_foods` truy vấn trực tiếp).
+- `generate(s, uid, start, days, c=None)`, `swap(s, uid, day, slot, c=None)`, `adjust(s, uid, day, slot, food_code, delta_g, c=None)`, `unlock(s, uid, day, slot, food_code, c=None)` → `DayPlan`; `c` = `Ctx` dựng sẵn ở route (dùng lại cho `_menu_out`). `generate` chạy tuần tự để ngày sau thấy món ngày trước; `adjust` khóa item ở gram mới, cân lại giữ cấu trúc, ghi `DECREASE_WHEN_MET`.
+- `recipe(s, uid, day, slot, lang) -> dict` (gọi `generate_recipe`; LLM lỗi ⇒ giữ công thức cũ + `kept_previous` hoặc template; cập nhật bản ghi tại chỗ).
+- `add_pantry(s, uid, day, food_code, grams) -> list[warning]` (một `Ctx`); `list_pantry(s, uid, day) -> [{id, food_code, grams}]`; `delete_pantry(s, uid, item_id)`.
 - `apply_plan(s, uid, plan) -> MenuDay` (kiểm tra lại dị ứng + rotation, `finalize` lại rồi lưu).
 
-**`chat.py`**: `RETENTION=30 ngày`, `PROPOSAL_TTL=1h`. `send(s, uid, text, now=None) -> dict` (parse → dựng `ChatContext` → `engine.handle` → ghi safety events → lưu tin nhắn + proposal mã hóa). `history(s, uid, limit=50) -> list[dict]`. `snacks_on(s, uid, day) -> list[LockedItem]`. `apply_proposal(s, uid, proposal_id) -> {day, version, regenerated_days}` (kiểm tra hết hạn/đã áp dụng/version; ghi `EnergyAdjustment`, sự kiện `COMPENSATION`, rebalance các ngày bù đã có thực đơn).
+**`chat.py`**: `RETENTION=30 ngày`, `PROPOSAL_TTL=1h`. `send(s, uid, text, now=None) -> dict` (parse → dựng `ChatContext` → `engine.handle` → ghi safety events → lưu tin nhắn + proposal mã hóa). `history(s, uid, limit=50) -> list[dict]`. `snacks_on(s, uid, day) -> list[LockedItem]`. `apply_proposal(s, uid, proposal_id) -> {day, version, regenerated_days}` (kiểm tra hết hạn/đã áp dụng/version; nhánh `log` ghi nhật ký bằng `IN.add_entries(..., commit=False)`; ghi `EnergyAdjustment`, sự kiện `COMPENSATION`, rebalance các ngày bù đã có thực đơn). Chat luôn 2 bước: `parser.parse` → `resolve_mentions` (nhánh 1 lượt LLM N1 đã gỡ ở vòng 10).
 
-**`foods.py`**: `LabelNutrients` (kiểm tra Atwater ±20%, tổng macro ≤100 g), `CustomFoodIn{name_vi, per_100g, portion_g, portion_description, contains_allergens, contains}`. `create_custom_food(s, uid, data) -> Ingredient` (code `user_<hex12>`, category snack, slots "S"). `list_foods(s, uid) -> list[dict]`.
+**`intake.py`**: `Slot`, `SLOTS`, `SOURCES`, `BATCH_MAX=20`. `summary(s, uid, day, catalog) -> {entries, totals, eaten_slots}`; `mark_eaten`; `add_entries(s, uid, day, entries, commit=True) -> [id]` (nạp hồ sơ + catalog **một lần** cho cả lô, kiểm tra từng mục bằng `_check_entry`, lỗi một mục ⇒ rollback cả lô); `delete_entry`; `rebalance(s, uid, day, c=None)` / `compute_rebalance` / `preview_rebalance`.
+
+**`meal_photo.py`**: `analyze(...)` ảnh ⇒ bản nháp; ghi thật qua `POST /intake/batch` (`IN.add_entries`).
+
+**`foods.py`**: `LabelNutrients` (kiểm tra Atwater ±20%, tổng macro ≤100 g), `CustomFoodIn{name_vi, per_100g, portion_g, portion_description, contains_allergens, contains}`. `create_custom_food(s, uid, data) -> Ingredient` (code `user_<hex12>`, category snack, slots "S"). `list_foods(s, uid) -> list[dict]`. `list_dishes(s) -> [{code, name_vi, name_en, main, slots}]`.
 
 ### 2.12 `app/seed.py`, `seed/`, `alembic/`
 - `python -m app.seed`: `foods_repo.seed`, in số nguyên liệu.
@@ -291,7 +303,7 @@ Khi flagged: không cắt giảm thêm (adjust −, low target), không bù chea
 - **Thay đổi schema DB**: sửa `db/models.py` → `alembic revision --autogenerate -m "..."` → kiểm tra file sinh ra.
 
 ### 2.13 `tests/`
-- `conftest.py`: đặt env (Fernet key ngẫu nhiên, JWT secret, `LLM_API_KEY=""`, SQLite) **trước khi import app**. Fixtures: `catalog` (seed catalog), `engine` (SQLite in-memory + seed), `client` (TestClient), `auth` (header đã đăng ký + hồ sơ `BASE_PROFILE`: nữ 30t, 160 cm, 55 kg, moderate). Helper `register(client, email, profile)`.
+- `conftest.py`: đặt env (Fernet key ngẫu nhiên, JWT secret, `LLM_API_KEY=""`, SQLite) **trước khi import app**. Fixtures: `catalog` (seed catalog), `engine` (SQLite in-memory + seed), `client` (TestClient), `auth` (header đã đăng ký + hồ sơ `BASE_PROFILE`: nữ 30t, 160 cm, 55 kg, moderate). Helper `register(client, email, profile)`, `log_intake(client, h, day, slot, food_code, grams)` (POST `/intake/batch` 1 mục), `intake_rows(engine, day)` (đọc nhật ký thẳng từ DB).
 - Nhóm: `nutrition/` (calculator, compensation), `foods/` (nguồn USDA, lọc, matching), `planner/` (±5%, rotation, pantry, rebalance, deterministic), `chat/` (vai trò món, snack/cheat day, parser LLM giả lập), `guardrails/` (mục 3 work.txt), `robustness/` (mục 4 work.txt), `api/test_flow.py` (end-to-end).
 - LLM được giả lập bằng class fake có `complete_json` (xem `tests/chat`, `tests/robustness`).
 - Chạy: `cd backend && pytest`.
@@ -302,22 +314,25 @@ Khi flagged: không cắt giảm thêm (adjust −, low target), không bù chea
 
 | File | Vai trò | Ghi chú cho người phát triển |
 |---|---|---|
-| `src/main.tsx` | `QueryClient` (retry 1), `BrowserRouter`. Routes: `/login`, `/onboarding`, `/`, `/chat`, `/pantry`, `/profile`, `/settings`. `Shell` chuyển hướng `/login` nếu chưa có session, `/onboarding` nếu chưa có hồ sơ; thanh tab dưới. | Thêm trang: tạo `pages/X.tsx`, thêm Route + NavLink |
+| `src/main.tsx` | `QueryClient` (retry 1), `BrowserRouter`. Routes: `/login`, `/help` (**ngoài `Shell`**, xem được khi chưa đăng nhập), `/onboarding`, `/`, `/week`, `/chat`, `/pantry`, `/shopping`, `/profile`, `/settings`. `Shell` chuyển hướng `/login` nếu chưa có session, `/onboarding` nếu chưa có hồ sơ; thanh tab dưới (không có tab Hướng dẫn). | Thêm trang: tạo `pages/X.tsx`, thêm Route + NavLink |
 | `src/types.ts` | Interface TS khớp JSON backend: `PlanItem, MealPlan, Deviation, Suggestion, DayPlan, Notice, Recipe, MenuDay, Food, Dish, Target, Needs, Proposal, ChatReply, Profile`. | Đổi response backend ⇒ cập nhật đây |
-| `src/api/client.ts` | `api<T>(path, init, retry)`: thêm `/api`, Bearer token, tự refresh khi 401, ném `ApiError(status, code, message, body)` (message ghép từ `errors[]` nếu là lỗi validation). `post/put/del`, `setTokens`, `hasSession`. | Access token chỉ trong bộ nhớ; refresh token trong `localStorage["hnag_refresh"]` |
-| `src/api/hooks.ts` | `useFoods()`, `useFoodNames() -> (code)=>name_vi`, `useDishNames() -> (code)=>name|null`, `useProfile()`, `useNeeds(enabled)`, `useMenu(day)` (queryKey `["menu", day]`), `useMenuMutation(fn)` (invalidate `["menu"]`), `generateDay(day)`. | |
+| `src/api/client.ts` | `api<T>(path, init, retry)`: thêm `/api`, Bearer token, tự refresh khi 401, ném `ApiError(status, code, message, body)` (message ghép từ `errors[]` nếu là lỗi validation). `post/put/del`, `setTokens`, `hasSession`, `logout()` (POST `/auth/logout` với refresh token hiện tại — lỗi mạng bỏ qua — rồi luôn xóa token). | Access token chỉ trong bộ nhớ; refresh token trong `localStorage["hnag_refresh"]` |
+| `src/api/hooks.ts` | `useFoods()`, `useFoodNames() -> (code)=>name_vi`, `useDishes()` (query `["dishes"]` dùng chung với `Dislikes`), `useDishNames() -> (code)=>name|null`, `useProfile()`, `useNeeds(enabled)`, `useMenu(day)` (queryKey `["menu", day]`), `useMenuMutation(fn)` → `applyMenuResult(qc, result)`: kết quả là `MenuDay` / `MenuDay[]` / `{menu}` ⇒ `setQueryData(["menu", day], [md])`, chỉ invalidate các query `menu` khác; không có MenuDay (recipe) ⇒ invalidate `["menu"]`. `generateDay(day)`. | `menusFromResult`, `applyMenuResult` có test (`hooks.test.ts`) |
 | `src/format.ts` | `fmtKcal` (làm tròn 10), `fmtGrams` (số nguyên), `fmtSig` (2 chữ số có nghĩa), `fmtPct`, `isoDay(Date)`, `addDays(iso, n)`. | **Luôn dùng** khi hiển thị số |
 | `src/i18n/vi.ts`, `index.ts` | Toàn bộ chuỗi UI tiếng Việt; `t` = từ điển hiện tại. | Không hard-code chuỗi mới trong component, thêm vào `vi.ts` |
 | `components/Progress.tsx` | `CalorieRing{actual, target}` (SVG, đỏ nếu > +5%), `MacroBar{code, actual, target}`. | |
 | `components/DaySummary.tsx` | Vòng kcal + 3 thanh macro + danh sách chỉ số chưa đạt kèm gợi ý + mâu thuẫn ràng buộc. | |
 | `components/MealCard.tsx` | Thẻ bữa có thể mở/đóng; mỗi nguyên liệu có nút −/+ (bước 10 g, ẩn với pantry), tag "có sẵn/ăn vặt/đã chỉnh", nút "Bỏ cố định", nút "Cách chế biến" + hiển thị công thức. | |
 | `components/Notices.tsx` | Hiển thị `notices` (DISCLAIMER thường, còn lại kiểu cảnh báo). | |
-| `pages/Auth.tsx` | Đăng nhập/đăng ký. | |
+| `components/Help.tsx` | `HelpLink({section, compact?})` — link "Xem hướng dẫn" (hoặc "?") tới `/help#<id>`; `HelpBanner` — banner "Mới dùng?" ở Hôm nay, nút ✕ ⇒ `dismissHelpBanner()`. | Lối vào: Đăng nhập (`/help`), Cài đặt đầu trang (`/help`), Giới hạn sức khỏe (`#settings`), Hôm nay trống (`#today`), Trò chuyện cạnh ô nhập (`#chat`), Có sẵn (`#pantry`) |
+| `src/help.ts` | Hàm thuần: `shouldShowHelpBanner()` / `dismissHelpBanner()` (localStorage `hnag_help_seen`, bọc try/catch: storage lỗi ⇒ vẫn hiện, đóng được trong phiên), `openSectionId(hash, ids)` (mặc định `start`), `rich(text)` (`**x**` ⇒ đoạn đậm, không markdown/innerHTML). | Test: `help.test.ts` |
+| `pages/Auth.tsx` | Đăng nhập/đăng ký; link "Hướng dẫn sử dụng" dưới form. | |
+| `pages/Help.tsx` | Trang Hướng dẫn: phần mở đầu ("Ứng dụng làm gì") + 11 mục `<details id>` theo thứ tự `start, today, log, week, chat, pantry, shopping, profile, settings, tips, faq`; mở sẵn mục trong hash (`/help#chat`), mặc định `start`. Đã đăng nhập ⇒ nút quay lại; chưa ⇒ link Đăng nhập. | Nội dung ở `i18n` khóa `help` (`intro`, `sections: HelpSection[]` = `{id, title, paragraphs, steps?, bullets?, after?}`), chép từ `docs/USER_GUIDE.md`; sửa guide thì sửa cả `vi.ts` + `en.ts` (`i18n.test.ts` kiểm tra cùng id/số đoạn) |
 | `pages/Profile.tsx` | Form hồ sơ (cũng là onboarding: bắt tick disclaimer); xử lý `LOW_ENERGY_ACK_REQUIRED` → hiện checkbox xác nhận; bảng nhu cầu kèm nguồn + giả định. | |
 | `pages/Today.tsx` | Điều hướng ngày, notices, cảnh báo cần xác nhận chuyên gia, nút tạo/tạo lại thực đơn, `DaySummary` + `MealCard` (adjust/unlock/recipe). | |
 | `pages/Chat.tsx` | Lịch sử + gửi tin; `ProposalCard` (nút Áp dụng → `/chat/proposals/{id}/apply`); `LabelForm` khi `kind=need_label` (POST `/foods/custom`). | |
 | `pages/Pantry.tsx` | Chọn ngày, thêm/xóa nguyên liệu có sẵn (chỉ liệt kê món không bị loại). | Sau khi thêm, người dùng phải "Tạo lại" thực đơn |
-| `pages/Settings.tsx` | `ExpertForm` cho từng bệnh nền nhạy cảm chưa xác nhận; xóa toàn bộ dữ liệu; đăng xuất. | |
+| `pages/Settings.tsx` | Giới hạn sức khỏe, giao diện/ngôn ngữ, tải dữ liệu, xóa toàn bộ dữ liệu; đăng xuất = `logout()` + `qc.clear()` + về `/login`. | |
 | `styles.css` | CSS thuần, biến màu `:root`, dark mode, max-width 640px (mobile-first). | |
 | `format.test.ts` | Vitest cho `format.ts`. Chạy `npm test`, `npm run typecheck`. | |
 
@@ -335,7 +350,7 @@ Khi flagged: không cắt giảm thêm (adjust −, low target), không bù chea
 → `CS.send` → `parser.parse` (LLM hoặc quy tắc) → `ChatContext` (plan_fn = `Ctx.solve`) → `engine.handle` → `ChatReply` → lưu mã hóa → trả proposals (có id). Người dùng bấm → `apply_proposal` → `MS.apply_plan` (+ energy_adjustments, rebalance ngày bù).
 
 **Công thức** `POST /menu/{day}/meals/{slot}/recipe`
-→ `generate_recipe(get_provider(...))` → `call_structured` (schema + `violations`) → lỗi ⇒ template; nếu đã có công thức cũ ⇒ giữ cũ.
+→ `MS.recipe` → `generate_recipe(get_provider(...))` → `call_structured` (schema + `violations`) → lỗi ⇒ template; nếu đã có công thức cũ ⇒ giữ cũ.
 
 ---
 
@@ -363,7 +378,6 @@ Khi flagged: không cắt giảm thêm (adjust −, low target), không bù chea
 
 - `docs/ARCHITECTURE.md §8` ghi `seed/ingredients_usda.json` nhưng file thực tế là `seed/ingredients.json`.
 - `ARCHITECTURE.md` mô tả bảng `profile_conditions`, `profile_restrictions`, `meal_dishes` — **không tồn tại** trong code (đã gộp vào payload mã hóa / `meals.dish_code`, xem §10 của tài liệu đó).
-- `MS.add_pantry` gọi `catalogs()` hai lần (thừa, chỉ ảnh hưởng hiệu năng).
 - `foods_repo._cache` là cache trong process: chạy nhiều worker thì sau khi seed lại cần restart.
 - `chat/parser.py::WANT_WORDS` chứa `"an "` (rất rộng) — hầu hết câu có chữ "ăn" sẽ là `want_food`.
 - GI trong seed là `gi_verified=False` (chưa đối chiếu nguồn).

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { post, setTokens } from "../api/client";
 import { LanguagePicker } from "../components/Choice";
 import { errorMessage, useI18n } from "../i18n";
@@ -38,6 +38,7 @@ export function AuthPage() {
           {mode === "login" ? t.noAccount : t.haveAccount}
         </button>
       </form>
+      <p className="center"><Link to="/help">{t.help.entry}</Link></p>
       <div className="card lang"><LanguagePicker /></div>
     </main>
   );

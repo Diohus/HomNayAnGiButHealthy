@@ -89,3 +89,26 @@ describe("vòng 4: giới hạn sức khỏe", () => {
     expect(errorMessage(e, en)).toContain("(kidney disease)");
   });
 });
+
+describe("vòng 11: trang hướng dẫn", () => {
+  const IDS = ["start", "today", "log", "week", "chat", "pantry", "shopping", "profile", "settings", "tips", "faq"];
+  const parts = ["paragraphs", "steps", "bullets", "after"] as const;
+
+  it("vi và en có cùng danh sách id mục, đúng thứ tự yêu cầu", () => {
+    expect(vi.help.sections.map((s) => s.id)).toEqual(IDS);
+    expect(en.help.sections.map((s) => s.id)).toEqual(IDS);
+  });
+
+  it("cùng số đoạn mỗi mục (kể cả phần mở đầu), không có chuỗi rỗng", () => {
+    expect(en.help.intro.paragraphs.length).toBe(vi.help.intro.paragraphs.length);
+    vi.help.sections.forEach((s, i) => {
+      const e = en.help.sections[i];
+      for (const k of parts) expect(e[k]?.length ?? 0, `${s.id}.${k}`).toBe(s[k]?.length ?? 0);
+      for (const d of [s, e]) {
+        const texts = [d.title, ...parts.flatMap((k) => d[k] ?? [])];
+        expect(texts.length, d.id).toBeGreaterThan(1);
+        for (const x of texts) expect(x.trim(), d.id).not.toBe("");
+      }
+    });
+  });
+});

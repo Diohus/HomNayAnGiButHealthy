@@ -4,6 +4,8 @@
 
 > ⚠️ Ứng dụng không chẩn đoán bệnh và không thay thế bác sĩ hay chuyên gia dinh dưỡng.
 
+Hướng dẫn sử dụng cho người dùng: [docs/USER_GUIDE.md](docs/USER_GUIDE.md) (trong app: trang `/help`).
+
 ## Tính năng
 
 - **Hồ sơ → nhu cầu hằng ngày**: Mifflin-St Jeor × hệ số hoạt động, macro theo AMDR, vi chất theo RDA/UL (NIH ODS). Mọi chỉ số đều kèm nguồn, độ tuổi và giới tính áp dụng.

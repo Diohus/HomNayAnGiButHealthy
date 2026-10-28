@@ -28,3 +28,18 @@
 
 ## Cách tiếp tục
 Đọc bảng trên ⇒ hỏi dev (SendMessage) đang ở đâu ⇒ nghiệm thu bằng cách tự chạy test + E2E ⇒ giao bước tiếp theo. Mỗi chu kỳ xong thì commit + push lên nhánh `feat/mvp-review-v1`.
+
+---
+## Chu kỳ v4 — Dọn code + Hướng dẫn sử dụng (PO phiên `homnayangibuthealthy-34`, dev `homnayangibuthealthy-41`, 2026-10-28)
+> Quy ước: mục ✅ DONE = đã nghiệm thu, phiên sau **không cần đọc lại** file yêu cầu tương ứng.
+
+| Bước | Trạng thái |
+|---|---|
+| Vòng 1–9, report v1–v3 | ✅ DONE (đừng đọc lại round-1..9, brainstorm-v2/v3) |
+| Rà code tìm trùng/tối ưu ⇒ `review/round-10.md` (R1–R7) | ✅ DONE |
+| Viết `docs/USER_GUIDE.md` + yêu cầu tích hợp `review/round-11.md` (G1–G3) | ✅ DONE |
+| Nghiệm thu vòng 10 | ✅ DONE (492 test, E2E LLM thật OK) — đừng đọc lại round-10.md |
+| Nghiệm thu vòng 11 | ✅ DONE (frontend 52 test) — đừng đọc lại round-11.md |
+| report-v4.md + commit/push | ✅ DONE |
+
+Test nền trước vòng 10: backend 493 passed (3:53).

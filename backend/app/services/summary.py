@@ -44,12 +44,13 @@ def week(s: Session, user_id: uuid.UUID, end: date, lang: Lang = "vi") -> dict:
         d = end - timedelta(days=i)
         targets = {t.code: t.value for t in MS.targets_for(s, user_id, c.needs, d)}
         md = MS.get_day(s, user_id, d)
-        logged = bool(IN.entries(s, user_id, d))
+        intake = IN.summary(s, user_id, d, c.full)  # một truy vấn nhật ký cho mỗi ngày
+        logged = bool(intake["entries"])
         days.append({
             "day": d.isoformat(),
             "target": {k: targets[k] for k in CODES if k in targets},
             "planned": _pick(MS.to_plan(md, c.full, c.tol).totals) if md is not None else None,
-            "eaten": _pick(IN.summary(s, user_id, d, c.full)["totals"]) if logged else None,
+            "eaten": _pick(intake["totals"]) if logged else None,
             "logged": logged,
         })
     basis = "eaten" if any(x["logged"] for x in days) else "planned"

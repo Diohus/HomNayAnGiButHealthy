@@ -32,6 +32,24 @@ export function setTokens(access: string | null, refresh: string | null) {
   }
 }
 
+// Đăng xuất: thu hồi refresh token ở backend (lỗi mạng/server thì bỏ qua), luôn xóa token phía client.
+export async function logout(): Promise<void> {
+  const rt = getRefresh();
+  try {
+    if (rt) {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept-Language": lang },
+        body: JSON.stringify({ refresh_token: rt }),
+      });
+    }
+  } catch {
+    /* mạng lỗi: vẫn đăng xuất phía client */
+  } finally {
+    setTokens(null, null);
+  }
+}
+
 export function hasSession(): boolean {
   return !!accessToken || !!getRefresh();
 }

@@ -10,24 +10,25 @@
 import uuid
 from collections import defaultdict
 from datetime import date
+from typing import Literal, get_args
 
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.core.errors import AppError
-from app.core.i18n import names
-from app.db import foods_repo
 from app.db import models as M
 from app.foods.catalog import NUTRIENT_CODES
-from app.foods.restrictions import exclusion_reason, reason_msg
+from app.foods.restrictions import ensure_allowed
 from app.nutrition.compensation import MEAL_FLOOR_SHARE
 from app.planner import DayPlan, LockedItem, MealPlan, PlanRequest, forbidden_mains, solve_day
 from app.planner.solver import MEAL_SHARE, finalize, totals_of
 from app.services import menu as MS
 from app.services import profile as P
 
-SLOTS = ("breakfast", "lunch", "dinner", "snack")
+Slot = Literal["breakfast", "lunch", "dinner", "snack"]
+SLOTS: tuple[str, ...] = get_args(Slot)
 SOURCES = ("plan", "chat", "manual", "ai_estimate", "estimate")  # estimate: khẩu phần điển hình của món
+BATCH_MAX = 20
 
 
 def entries(s: Session, user_id: uuid.UUID, day: date) -> list[M.IntakeEntry]:
@@ -66,28 +67,39 @@ def mark_eaten(s: Session, user_id: uuid.UUID, day: date, slot: str, eaten: bool
     s.commit()
 
 
-def add_entry(s: Session, user_id: uuid.UUID, day: date, slot: str, food_code: str, grams: float,
-              source: str = "manual", commit: bool = True) -> int:
-    if slot not in SLOTS:
+def _check_entry(e: dict, full, allowed, profile) -> None:
+    """Kiểm tra MỘT mục nhật ký với hồ sơ + catalog đã nạp sẵn (dị ứng/chế độ ăn là ràng buộc cứng)."""
+    if e["slot"] not in SLOTS:
         raise AppError(422, "SLOT_INVALID")
-    if not (1 <= grams <= 3000):
+    if not (1 <= e["grams"] <= 3000):
         raise AppError(422, "GRAMS_RANGE")
-    ing = foods_repo.visible_ingredient(s, user_id, food_code)
-    if ing is None:
+    if e["food_code"] not in full.foods:  # full = nguyên liệu global + nguyên liệu riêng của người dùng
         raise AppError(404, "FOOD_NOT_FOUND")
-    p = P.require_profile(s, user_id)
-    _, allowed = MS.catalogs(s, user_id, p)
-    if food_code not in allowed.foods:  # dị ứng/chế độ ăn là ràng buộc cứng, kể cả khi ghi nhật ký
-        reason = exclusion_reason(ing, p.allergies, p.diets) or ""
-        raise AppError(422, "ALLERGEN_CONFLICT", key="error.ALLERGEN_CONFLICT.item",
-                       params={"food": names(ing), "reason": reason_msg(reason)}, reason=reason)
-    row = M.IntakeEntry(user_id=user_id, day=day, slot=slot, food_code=food_code, grams=grams,
-                        source=source if source in SOURCES else "manual")
-    s.add(row)
-    s.flush()
+    ensure_allowed(full.food(e["food_code"]), allowed, profile)
+
+
+def add_entries(s: Session, user_id: uuid.UUID, day: date, entries: list[dict], commit: bool = True) -> list[int]:
+    """Ghi nhiều mục nhật ký: tất cả hoặc không gì cả (dị ứng/khối lượng sai ở MỘT mục ⇒ không ghi mục nào).
+    Hồ sơ + catalog nạp MỘT lần cho cả lô. `commit=False`: bên gọi tự commit (vd áp dụng đề xuất chat)."""
+    if not 1 <= len(entries) <= BATCH_MAX:
+        raise AppError(422, "INTAKE_BATCH_SIZE", params={"max": BATCH_MAX})
+    try:
+        p = P.require_profile(s, user_id)
+        full, allowed = MS.catalogs(s, user_id, p)
+        rows = []
+        for e in entries:
+            _check_entry(e, full, allowed, p)
+            source = e.get("source", "manual")
+            rows.append(M.IntakeEntry(user_id=user_id, day=day, slot=e["slot"], food_code=e["food_code"],
+                                      grams=e["grams"], source=source if source in SOURCES else "manual"))
+        s.add_all(rows)
+        s.flush()
+    except AppError:
+        s.rollback()
+        raise
     if commit:
         s.commit()
-    return row.id
+    return [r.id for r in rows]
 
 
 def delete_entry(s: Session, user_id: uuid.UUID, entry_id: int) -> None:
@@ -98,8 +110,8 @@ def delete_entry(s: Session, user_id: uuid.UUID, entry_id: int) -> None:
     s.commit()
 
 
-def rebalance(s: Session, user_id: uuid.UUID, day: date) -> DayPlan:
-    report, targets = compute_rebalance(s, user_id, day)
+def rebalance(s: Session, user_id: uuid.UUID, day: date, c: MS.Ctx | None = None) -> DayPlan:
+    report, targets = compute_rebalance(s, user_id, day, c=c)
     MS.save_plan(s, user_id, report, targets)
     s.commit()
     return report
@@ -114,8 +126,9 @@ def preview_rebalance(s: Session, user_id: uuid.UUID, day: date, extra: list[dic
         return None
 
 
-def compute_rebalance(s: Session, user_id: uuid.UUID, day: date, extra: list[dict] = ()) -> tuple[DayPlan, list]:
-    c = MS.Ctx(s, user_id)
+def compute_rebalance(s: Session, user_id: uuid.UUID, day: date, extra: list[dict] = (),
+                      c: MS.Ctx | None = None) -> tuple[DayPlan, list]:
+    c = c or MS.Ctx(s, user_id)
     md = MS.get_day(s, user_id, day)
     if md is None:
         raise AppError(404, "MENU_NOT_FOUND")

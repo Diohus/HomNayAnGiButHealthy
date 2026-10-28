@@ -25,9 +25,6 @@ class Settings(BaseSettings):
     llm_api_key: str = ""
     llm_timeout_s: float = 15.0
     llm_max_retries: int = 2
-    # N1: hiểu câu chat bằng 1 lượt LLM (ý định + món). TẮT mặc định: đo thật (scripts/bench_chat.py) cho thấy
-    # đường 2 bước cũ nhanh hơn (đa số câu chỉ cần 1 lượt parse; prompt gộp lớn hơn, hay phải thử lại). Bật: CHAT_SINGLE_PASS=true
-    chat_single_pass: bool = False
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-opus-5-5"
 

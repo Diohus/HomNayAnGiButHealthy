@@ -21,10 +21,13 @@ CHAT = (20, 60)  # theo user
 RECIPE = (10, 60)  # theo user
 EXTRACT = (5, 60 * 60)  # theo user — trích xuất giới hạn bằng LLM vision
 SWAP = (20, 60)  # theo user — đổi một bữa (chạy solver)
+# theo user — nút +/− và bỏ khóa (chạy solver). Riêng với SWAP: bấm +/− liên tục vài lần cho mỗi nguyên liệu
+# dễ vượt 20/phút; nút bị khóa trong lúc chờ solver nên 60/phút vẫn chặn được gọi dồn bằng script.
+ADJUST = (60, 60)
 PHOTO = (10, 60 * 60)  # theo user — ảnh bữa ăn (LLM vision trả phí)
 EXPORT = (3, 60 * 60)  # theo user — tải dữ liệu (mọi lượt, kể cả sai mật khẩu: chống dò mật khẩu)
-MAX_WINDOW_S = max(w for _, w in (LOGIN_FAILURES, LOGIN_FAILURES_IP, REGISTER, CHAT, RECIPE, EXTRACT, SWAP, PHOTO,
-                                  EXPORT))
+MAX_WINDOW_S = max(w for _, w in (LOGIN_FAILURES, LOGIN_FAILURES_IP, REGISTER, CHAT, RECIPE, EXTRACT, SWAP, ADJUST,
+                                  PHOTO, EXPORT))
 MAX_KEYS = 10_000
 
 

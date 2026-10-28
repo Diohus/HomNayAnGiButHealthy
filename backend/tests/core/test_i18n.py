@@ -190,9 +190,9 @@ def test_recipe_regenerate_same_meal_updates_in_place(client, auth, engine, monk
     en_out = {"steps": ["Pan-sear the chicken"], "seasonings": [{"name": "Pepper", "note": "sprinkle"}],
               "tip": "Little oil"}
     url = f"/api/menu/{DAY}/meals/lunch/recipe"
-    monkeypatch.setattr("app.api.routes.get_provider", lambda s: FakeProvider([vi_out]))
+    monkeypatch.setattr("app.services.menu.get_provider", lambda s: FakeProvider([vi_out]))
     r1 = client.post(url, headers=auth)
-    monkeypatch.setattr("app.api.routes.get_provider", lambda s: FakeProvider([en_out]))
+    monkeypatch.setattr("app.services.menu.get_provider", lambda s: FakeProvider([en_out]))
     r2 = client.post(url, headers={**auth, **EN_H})
     assert r1.status_code == 200 and r2.status_code == 200, r2.text
     assert r2.json()["steps"] == ["Pan-sear the chicken"] and r2.json()["source"] == "llm"
@@ -203,5 +203,5 @@ def test_recipe_regenerate_same_meal_updates_in_place(client, auth, engine, monk
         assert c.execute(select(func.count()).select_from(M.Recipe).where(M.Recipe.meal_id == lunch_id)
                          ).scalar() == 1
     # lần 3 (vi) vẫn 200
-    monkeypatch.setattr("app.api.routes.get_provider", lambda s: FakeProvider([vi_out]))
+    monkeypatch.setattr("app.services.menu.get_provider", lambda s: FakeProvider([vi_out]))
     assert client.post(url, headers=auth).status_code == 200

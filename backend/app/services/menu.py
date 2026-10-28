@@ -1,19 +1,21 @@
 """Điều phối thực đơn: sinh ngày, +/- nguyên liệu, pantry, lưu/đọc DB. Số liệu luôn do planner tính."""
 
 import uuid
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
+from app.ai.providers import get_provider
+from app.ai.recipes import generate_recipe
 from app.core.config import get_settings
 from app.core.errors import AppError
-from app.core.i18n import Lang, names
+from app.core.i18n import Lang, name_of
 from app.db import foods_repo
 from app.db import models as M
 from app.foods.catalog import FoodCatalog
-from app.foods.restrictions import exclusion_reason, reason_msg
-from app.nutrition.schemas import DIABETES, HealthProfileIn, NutritionNeeds
+from app.foods.restrictions import ensure_allowed
+from app.nutrition.schemas import DIABETES, Condition, HealthProfileIn, NutritionNeeds
 from app.planner import (
     DayPlan,
     LockedItem,
@@ -200,10 +202,10 @@ class Ctx:
         return solve_day(req, self.catalog), targets
 
 
-def generate(s: Session, user_id: uuid.UUID, start: date, days: int) -> list[DayPlan]:
+def generate(s: Session, user_id: uuid.UUID, start: date, days: int, c: Ctx | None = None) -> list[DayPlan]:
     if not 1 <= days <= 7:
         raise AppError(422, "DAYS_RANGE", key="error.DAYS_RANGE.generate")
-    c = Ctx(s, user_id)
+    c = c or Ctx(s, user_id)
     out = []
     for i in range(days):  # tuần tự: ngày sau thấy món chính của ngày trước (ràng buộc lặp món)
         plan, targets = c.solve(start + timedelta(days=i))
@@ -213,10 +215,11 @@ def generate(s: Session, user_id: uuid.UUID, start: date, days: int) -> list[Day
     return out
 
 
-def swap(s: Session, user_id: uuid.UUID, day: date, slot: str) -> DayPlan:
+def swap(s: Session, user_id: uuid.UUID, day: date, slot: str, c: Ctx | None = None) -> DayPlan:
     """Đổi MỘT bữa: sinh lại bữa đó, các bữa khác giữ nguyên (khóa đúng slot), pantry/đồ ăn vặt giữ nguyên.
-    Cấm món chính hiện tại, món của các bữa khác trong ngày, món không thích; giữ ràng buộc lặp món."""
-    c = Ctx(s, user_id)
+    Cấm món chính hiện tại, món của các bữa khác trong ngày, món không thích; giữ ràng buộc lặp món.
+    `c`: ngữ cảnh đã dựng sẵn (route dùng lại để trả thực đơn, không dựng 2 lần)."""
+    c = c or Ctx(s, user_id)
     md = get_day(s, user_id, day)
     if md is None:
         raise AppError(404, "MENU_NOT_FOUND")
@@ -260,9 +263,10 @@ def swap(s: Session, user_id: uuid.UUID, day: date, slot: str) -> DayPlan:
     return final
 
 
-def adjust(s: Session, user_id: uuid.UUID, day: date, slot: str, food_code: str, delta_g: float) -> DayPlan:
+def adjust(s: Session, user_id: uuid.UUID, day: date, slot: str, food_code: str, delta_g: float,
+           c: Ctx | None = None) -> DayPlan:
     """Nút +/-: cố định nguyên liệu tại khối lượng mới, cân bằng lại phần còn lại (giữ cấu trúc bữa)."""
-    c = Ctx(s, user_id)
+    c = c or Ctx(s, user_id)
     md = get_day(s, user_id, day)
     if md is None:
         raise AppError(404, "MENU_NOT_FOUND")
@@ -270,11 +274,7 @@ def adjust(s: Session, user_id: uuid.UUID, day: date, slot: str, food_code: str,
     item = next((i for i in meal.items if i.ingredient_code == food_code), None) if meal else None
     if item is None:
         raise AppError(404, "ITEM_NOT_FOUND")
-    if food_code not in c.catalog.foods:
-        f = c.full.food(food_code)
-        reason = exclusion_reason(f, c.profile.allergies, c.profile.diets) or ""
-        raise AppError(422, "ALLERGEN_CONFLICT", key="error.ALLERGEN_CONFLICT.item",
-                       params={"food": names(f), "reason": reason_msg(reason)}, reason=reason)
+    ensure_allowed(c.full.food(food_code), c.catalog, c.profile)
     if item.origin == "pantry":
         raise AppError(422, "PANTRY_ITEM")
     if delta_g == 0 or abs(delta_g) > 500:
@@ -301,8 +301,8 @@ def adjust(s: Session, user_id: uuid.UUID, day: date, slot: str, food_code: str,
     return plan
 
 
-def unlock(s: Session, user_id: uuid.UUID, day: date, slot: str, food_code: str) -> DayPlan:
-    c = Ctx(s, user_id)
+def unlock(s: Session, user_id: uuid.UUID, day: date, slot: str, food_code: str, c: Ctx | None = None) -> DayPlan:
+    c = c or Ctx(s, user_id)
     md = get_day(s, user_id, day)
     meal = next((m for m in md.meals if m.slot == slot), None) if md else None
     item = next((i for i in meal.items if i.ingredient_code == food_code), None) if meal else None
@@ -316,32 +316,65 @@ def unlock(s: Session, user_id: uuid.UUID, day: date, slot: str, food_code: str)
     return plan
 
 
+# ---------------- công thức ----------------
+def recipe(s: Session, user_id: uuid.UUID, day: date, slot: str, lang: Lang = "vi") -> dict:
+    """AI đề xuất cách chế biến. Lỗi/timeout LLM ⇒ giữ công thức cũ nếu có, nếu không dùng template."""
+    c = Ctx(s, user_id)
+    md = get_day(s, user_id, day)
+    meal = next((m for m in md.meals if m.slot == slot and m.active), None) if md else None
+    if meal is None:
+        raise AppError(404, "MEAL_NOT_FOUND")
+    # Tên món/nguyên liệu theo ngôn ngữ: LLM viết công thức cùng ngôn ngữ (bộ lọc dị ứng kiểm tra cả vi + en)
+    dish = name_of(c.full.dishes[meal.dish_code], lang) if meal.dish_code in c.full.dishes else None
+    names = [name_of(c.full.food(i.ingredient_code), lang) for i in meal.items if i.ingredient_code in c.full.foods]
+    settings = get_settings()
+    r = generate_recipe(get_provider(settings), dish, names, c.profile.allergies, c.profile.diets,
+                        low_sodium=Condition.hypertension in c.profile.conditions,
+                        max_retries=settings.llm_max_retries, lang=lang, avoid=PREF.text_dislikes(s, user_id))
+    if r.source == "template" and meal.recipe is not None:
+        return {**meal.recipe.content, "source": meal.recipe.source, "kept_previous": True}
+    content = r.model_dump(exclude={"source"})
+    if meal.recipe is None:
+        meal.recipe = M.Recipe(content=content, source=r.source)
+    else:
+        # Cập nhật tại chỗ: thay object mới ⇒ SQLAlchemy INSERT trước DELETE (orphan) ⇒ vi phạm UNIQUE(meal_id)
+        meal.recipe.content, meal.recipe.source, meal.recipe.created_at = content, r.source, datetime.now(UTC)
+    s.commit()
+    return r.model_dump()
+
+
 # ---------------- pantry ----------------
 def add_pantry(s: Session, user_id: uuid.UUID, day: date, food_code: str, grams: float) -> list[str]:
-    p = P.require_profile(s, user_id)
+    c = Ctx(s, user_id)  # hồ sơ, nhu cầu, catalog: nạp một lần
     if not (0 < grams <= 3000):
         raise AppError(422, "GRAMS_RANGE")
-    ing = foods_repo.visible_ingredient(s, user_id, food_code)
-    if ing is None:
+    if food_code not in c.full.foods:  # full = nguyên liệu global + nguyên liệu riêng của người dùng
         raise AppError(404, "FOOD_NOT_FOUND")
-    _, allowed = catalogs(s, user_id, p)
-    full, _ = catalogs(s, user_id, p)
-    if food_code not in allowed.foods:
-        reason = exclusion_reason(full.food(food_code), p.allergies, p.diets)
-        raise AppError(422, "ALLERGEN_CONFLICT", key="error.ALLERGEN_CONFLICT.item",
-                       params={"food": names(ing), "reason": reason_msg(reason)}, reason=reason)
+    ensure_allowed(c.full.food(food_code), c.catalog, c.profile)
     s.add(M.PantryItem(user_id=user_id, day=day, ingredient_code=food_code, grams=grams))
     s.flush()
     # Phát hiện mâu thuẫn: tổng nguyên liệu tự thêm vượt nhu cầu năng lượng
     warnings = []
-    _, needs, _ = P.current_needs(s, user_id)
-    rows = s.scalars(select(M.PantryItem).where(M.PantryItem.user_id == user_id, M.PantryItem.day == day)).all()
-    kcal = sum(allowed.food(r.ingredient_code).nutrient("energy_kcal", r.grams) for r in rows
-               if r.ingredient_code in allowed.foods)
-    if kcal > energy_target(s, user_id, needs, day) * (1 + get_settings().planner_tolerance):
+    rows = list_pantry_rows(s, user_id, day)
+    kcal = sum(c.catalog.food(r.ingredient_code).nutrient("energy_kcal", r.grams) for r in rows
+               if r.ingredient_code in c.catalog.foods)
+    if kcal > energy_target(s, user_id, c.needs, day) * (1 + c.tol):
         warnings.append("PANTRY_EXCEEDS_ENERGY")
     s.commit()
     return warnings
+
+
+def list_pantry_rows(s: Session, user_id: uuid.UUID, day: date) -> list[M.PantryItem]:
+    return list(s.scalars(select(M.PantryItem).where(M.PantryItem.user_id == user_id, M.PantryItem.day == day)))
+
+
+def list_pantry(s: Session, user_id: uuid.UUID, day: date) -> list[dict]:
+    return [{"id": r.id, "food_code": r.ingredient_code, "grams": r.grams} for r in list_pantry_rows(s, user_id, day)]
+
+
+def delete_pantry(s: Session, user_id: uuid.UUID, item_id: int) -> None:
+    s.execute(delete(M.PantryItem).where(M.PantryItem.id == item_id, M.PantryItem.user_id == user_id))
+    s.commit()
 
 
 def apply_plan(s: Session, user_id: uuid.UUID, plan: DayPlan) -> M.MenuDay:

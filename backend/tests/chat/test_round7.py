@@ -11,6 +11,7 @@ from app.planner import LockedItem, PlanRequest, solve_day
 from app.services.targets import planner_targets
 from tests.chat.conftest import ask
 from tests.chat.test_resolve import FakeLLM, parsed, with_llm
+from tests.conftest import log_intake
 
 DAY = date(2026, 10, 21)
 
@@ -105,8 +106,7 @@ def test_seven_day_diversity(client, auth, catalog):
 def test_no_main_dish_warning_not_for_eaten_meals(client, auth):
     client.post("/api/menu/generate", json={"start": DAY.isoformat()}, headers=auth)
     client.post(f"/api/menu/{DAY}/meals/breakfast/eaten", json={"eaten": True}, headers=auth)
-    client.post("/api/intake", json={"day": DAY.isoformat(), "slot": "snack", "food_code": "banana", "grams": 120},
-                headers=auth)
+    log_intake(client, auth, DAY, "snack", "banana", 120)
     r = client.post(f"/api/menu/{DAY}/rebalance", headers=auth).json()
     assert not any(w.startswith("NO_MAIN_DISH") for w in r["plan"]["warnings"])
 

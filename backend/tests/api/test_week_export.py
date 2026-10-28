@@ -7,7 +7,7 @@ import pytest
 
 from app.core import ratelimit as RL
 from app.foods import load_seed_catalog
-from tests.conftest import BASE_PROFILE, register
+from tests.conftest import BASE_PROFILE, log_intake, register
 
 DAY = date(2026, 10, 21)
 PW = "matkhau-an-toan"
@@ -20,8 +20,7 @@ def _week(client, h, end):
 
 
 def _log(client, h, day, food="white_rice", grams=50, slot="lunch"):
-    r = client.post("/api/intake", json={"day": day.isoformat(), "slot": slot, "food_code": food, "grams": grams},
-                    headers=h)
+    r = log_intake(client, h, day, slot, food, grams)
     assert r.status_code == 201, r.text
 
 

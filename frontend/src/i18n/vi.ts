@@ -1,3 +1,8 @@
+// Một mục của trang Hướng dẫn: đoạn mở đầu, các bước (danh sách số), gạch đầu dòng, đoạn sau danh sách — theo thứ tự đó.
+export interface HelpSection {
+  id: string; title: string; paragraphs: string[]; steps?: string[]; bullets?: string[]; after?: string[];
+}
+
 // Chuỗi giao diện tiếng Việt. en.ts phải có đủ cùng khóa (kiểu Dict). Placeholder dạng {ten} được điền bằng fmt().
 export const vi = {
   appName: "Hôm Nay Ăn Gì",
@@ -282,6 +287,137 @@ export const vi = {
     INVALID_IMAGE: "Tệp không phải ảnh hợp lệ (chỉ nhận JPEG, PNG, WebP).",
     EXTRACTION_UNAVAILABLE: "Hiện chưa đọc được tài liệu bằng AI. Bạn vẫn có thể nhập giới hạn bằng tay.",
   } as Record<string, string>,
+  // Vòng 11: trang Hướng dẫn (/help). Nội dung gốc: docs/USER_GUIDE.md — sửa ở đó thì sửa cả đây và en.ts.
+  // **chữ** = tên nút, hiển thị <strong> (help.ts::rich). en.ts phải có cùng id mục và cùng số đoạn mỗi mục.
+  help: {
+    title: "Hướng dẫn sử dụng Hôm Nay Ăn Gì",
+    entry: "Hướng dẫn sử dụng",
+    more: "Xem hướng dẫn",
+    back: "‹ Quay lại",
+    login: "Đăng nhập",
+    banner: "Mới dùng? Xem hướng dẫn 1 phút",
+    bannerClose: "Đóng",
+    intro: {
+      title: "Ứng dụng làm gì",
+      paragraphs: [
+        "Hôm Nay Ăn Gì gợi ý thực đơn mỗi ngày theo cơ thể, mục tiêu, dị ứng và khẩu vị của bạn. Số liệu dinh dưỡng "
+          + "lấy từ cơ sở dữ liệu USDA. Chỗ nào AI ước tính, app gắn nhãn **\"AI ước tính\"**.",
+        "**Lưu ý:** app không thay thế bác sĩ hay chuyên gia dinh dưỡng. Thực đơn chỉ để tham khảo và có sai số.",
+      ],
+    },
+    sections: [
+      {
+        id: "start", title: "Bắt đầu trong 3 bước", paragraphs: [],
+        steps: [
+          "**Đăng ký** bằng email và mật khẩu (từ 8 ký tự).",
+          "**Nhập hồ sơ:** giới tính, tuổi, chiều cao, cân nặng, mức vận động, mục tiêu (giảm cân, giữ cân, tăng cơ). "
+            + "Thêm bệnh nền, dị ứng, chế độ ăn nếu có. App tính nhu cầu năng lượng và chất dinh dưỡng mỗi ngày.",
+          "Vào tab **Hôm nay** và bấm **Tạo thực đơn**.",
+        ],
+      },
+      {
+        id: "today", title: "Tab Hôm nay: thực đơn trong ngày", paragraphs: [],
+        bullets: [
+          "Mỗi bữa ghi tên món, nguyên liệu và khối lượng (gram, tính khi còn sống/khô). Vòng tròn trên cùng cho biết "
+            + "bạn đã ăn bao nhiêu so với mục tiêu.",
+          "**+ / −** cạnh nguyên liệu: tăng hoặc giảm khối lượng. App giữ đúng phần bạn chỉnh và tự cân lại phần còn "
+            + "lại. Bấm **Bỏ cố định** để app tự chọn lại khối lượng đó.",
+          "**Đổi món:** không thích bữa này thì bấm để đổi sang món khác. Các bữa còn lại giữ nguyên.",
+          "**Cách chế biến:** AI gợi ý cách nấu. Gợi ý luôn tránh nguyên liệu bạn dị ứng.",
+          "**Ngày trước / Ngày sau:** xem hoặc tạo thực đơn cho ngày khác.",
+          "Một món chính không lặp lại quá 3 ngày liên tiếp.",
+        ],
+      },
+      {
+        id: "log", title: "Ghi lại những gì đã ăn", paragraphs: [],
+        bullets: [
+          "**Đã ăn:** ăn đúng như thực đơn thì bấm nút này ở bữa đó.",
+          "**+ Thêm món đã ăn:** ăn món ngoài thực đơn thì tìm tên món, nhập số gram rồi ghi vào nhật ký.",
+          "**📷 Chụp bữa ăn:** chụp hoặc chọn ảnh, đồng ý gửi ảnh cho AI, rồi bấm **Phân tích ảnh**. App tạo bản nháp "
+            + "gồm các món và số gram ước tính. Kiểm tra và sửa lại trước khi ghi. App không lưu ảnh.",
+          "**Cân lại các bữa còn lại:** ăn nhiều hoặc ít hơn dự định thì bấm nút này. App điều chỉnh các bữa chưa ăn, "
+            + "mỗi bữa vẫn giữ một lượng tối thiểu. App không bắt bạn bù sang ngày hôm sau.",
+        ],
+      },
+      {
+        id: "week", title: "Tab Tuần: tổng quan 7 ngày",
+        paragraphs: [
+          "Bấm **Tuần** trong tab Hôm nay để xem năng lượng 7 ngày so với mục tiêu và mức trung bình mỗi ngày. App liệt "
+            + "kê những chất bạn hay ăn thiếu (chất xơ, canxi, sắt…) và gợi ý thực phẩm để bổ sung. Tuần nào chưa ghi "
+            + "nhật ký thì app tính theo thực đơn.",
+        ],
+      },
+      {
+        id: "chat", title: "Tab Trò chuyện: nói chuyện như với người thật",
+        paragraphs: ["Gõ tự nhiên, có dấu hay không dấu đều được. Ví dụ:"],
+        bullets: [
+          "\"trưa nay ăn phở bò rồi\" → ghi vào nhật ký và cân lại các bữa sau.",
+          "\"tối nay muốn ăn cá hồi\" → đề xuất thực đơn có cá hồi.",
+          "\"hôm nay ăn 2 cây kem\" → tính phần kem vào ngày và đề xuất cách cân đối.",
+          "\"tôi không thích ăn mướp đắng\" → thêm vào danh sách không thích.",
+        ],
+        after: [
+          "Mọi thay đổi chỉ áp dụng khi bạn bấm **Áp dụng**. Nếu chatbot hỏi lại \"ý bạn là món nào?\", hãy chọn món "
+            + "đúng.",
+          "Món không có trong dữ liệu (ví dụ một sản phẩm đóng gói) thì nhập theo **nhãn sản phẩm**: tên và số kcal, "
+            + "đạm, carb, béo trên 100 g.",
+        ],
+      },
+      {
+        id: "pantry", title: "Tab Có sẵn: nguyên liệu trong nhà",
+        paragraphs: [
+          "Thêm những gì đã có trong tủ lạnh, kèm ngày và số gram. Sau đó **tạo lại thực đơn** của ngày đó để app ưu "
+            + "tiên dùng các nguyên liệu này.",
+        ],
+      },
+      {
+        id: "shopping", title: "Tab Đi chợ",
+        paragraphs: [
+          "Chọn ngày bắt đầu, số ngày và số người ăn. App cộng nguyên liệu của các thực đơn đã tạo và trừ đồ có sẵn. "
+            + "Bấm **Sao chép** hoặc **Chia sẻ** để gửi danh sách cho người đi chợ.",
+        ],
+      },
+      {
+        id: "profile", title: "Tab Hồ sơ", paragraphs: [],
+        bullets: [
+          "Sửa thông tin cơ thể, mục tiêu, dị ứng, chế độ ăn. App tính lại nhu cầu ngay khi bạn lưu.",
+          "**Không thích:** món hoặc nguyên liệu bạn không muốn ăn. App sẽ hạn chế dùng nhưng không loại hẳn. Dị ứng "
+            + "thì khác: app loại hẳn.",
+        ],
+      },
+      {
+        id: "settings", title: "Cài đặt (⚙)", paragraphs: [],
+        bullets: [
+          "**Giới hạn sức khỏe:** nếu bác sĩ đã cho giới hạn (natri, đạm, kali…), hãy nhập tay, chụp ảnh hoặc dán văn "
+            + "bản chỉ định. AI đọc tài liệu và tạo bản nháp. AI có thể đọc sai, nên hãy so với bản gốc rồi mới lưu.",
+          "**Giao diện** (sáng/tối) và **Ngôn ngữ** (Tiếng Việt/English).",
+          "**Tải dữ liệu của tôi:** tải về tệp JSON chứa toàn bộ dữ liệu. Tệp có dữ liệu sức khỏe, hãy cất giữ cẩn "
+            + "thận.",
+          "**Xóa toàn bộ dữ liệu:** xóa vĩnh viễn, không khôi phục được.",
+          "**Đăng xuất.**",
+        ],
+      },
+      {
+        id: "tips", title: "Mẹo", paragraphs: [],
+        bullets: [
+          "Có thể cài app lên điện thoại: mở trên trình duyệt rồi chọn **Thêm vào màn hình chính**.",
+          "Khi mất mạng, app vẫn hiện dữ liệu đã tải nhưng không cho sửa.",
+          "Thực đơn chưa đạt mục tiêu thì app ghi rõ thiếu hoặc vượt chất nào và gợi ý thực phẩm bổ sung.",
+        ],
+      },
+      {
+        id: "faq", title: "Câu hỏi thường gặp", paragraphs: [],
+        bullets: [
+          "**Vì sao không thấy món X?** Có thể món đó chứa thứ bạn dị ứng, không hợp chế độ ăn, hoặc chưa có trong dữ "
+            + "liệu. Hãy thử nhập theo nhãn sản phẩm trong tab Trò chuyện.",
+          "**Số liệu chính xác đến đâu?** Đây là ước tính từ dữ liệu chuẩn. Món nấu thực tế có thể khác. Phần muối và "
+            + "nước mắm nêm thêm chưa được tính.",
+          "**Dữ liệu sức khỏe có an toàn không?** Hồ sơ, giới hạn và tin nhắn chat đều được mã hóa. Ảnh gửi cho AI "
+            + "không được lưu.",
+        ],
+      },
+    ] as HelpSection[],
+  },
   unverified: "chưa xác minh",
   userProvided: "người dùng cung cấp",
   error: "Đã có lỗi xảy ra.",

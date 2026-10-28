@@ -13,7 +13,6 @@ from app.ai.providers import get_provider
 from app.chat.engine import ChatContext, handle
 from app.chat.parser import parse
 from app.chat.schemas import ChatReply, Proposal
-from app.chat.understand import understand
 from app.core.config import get_settings
 from app.core.crypto import get_cipher
 from app.core.errors import AppError
@@ -65,13 +64,7 @@ def send(s: Session, user_id: uuid.UUID, text: str, now: datetime | None = None,
     provider = get_provider(settings)
     t0 = time.perf_counter()
     timing = {"parse": 0.0, "resolve": 0.0}
-    one = (understand(text, provider, c.full, lang, now, settings.llm_max_retries)
-           if settings.chat_single_pass else None)
-    if one is not None:  # N1: 1 lượt LLM; lượt gộp lỗi ⇒ đường 2 bước cũ ⇒ parser quy tắc
-        (parsed, pre), parser_name = one, "llm"
-    else:
-        pre = {}
-        parsed, parser_name = parse(text, provider, settings.llm_max_retries, lang, now)
+    parsed, parser_name = parse(text, provider, settings.llm_max_retries, lang, now)
     timing["parse"] = (time.perf_counter() - t0) * 1000
 
     def plan_fn(day, required, snacks, energy_override, min_meal_energy, extra=()):
@@ -79,14 +72,9 @@ def send(s: Session, user_id: uuid.UUID, text: str, now: datetime | None = None,
                        min_meal_energy=min_meal_energy, extra_locked=list(extra))[0]
 
     def resolve_fn(mentions):  # K1: LLM chọn mã trong ứng viên; cache không chứa user_id/dị ứng
-        # đã có từ lượt gộp N1 ⇒ không gọi thêm; lượt gộp nói "unknown" ⇒ hỏi lại resolver riêng (prompt tập trung)
-        out = {m: pre[m] for m in mentions if m in pre and pre[m].kind != "unknown"}
-        todo = [m for m in mentions if m not in out]
-        if not todo:
-            return out
         t = time.perf_counter()
         try:
-            return {**out, **resolve_mentions(provider, todo, c.full, lang, settings.llm_max_retries)}
+            return resolve_mentions(provider, mentions, c.full, lang, settings.llm_max_retries)
         finally:
             timing["resolve"] += (time.perf_counter() - t) * 1000
 
@@ -149,9 +137,8 @@ def apply_proposal(s: Session, user_id: uuid.UUID, proposal_id: uuid.UUID) -> di
         raise AppError(409, "PROPOSAL_EXPIRED")
     pr = Proposal.model_validate(get_cipher().decrypt(row.encrypted_payload))
     if pr.key == "log" and pr.intake:  # ghi nhật ký đã ăn (kiểm tra lại dị ứng từng món)
-        for e in pr.intake:
-            IN.add_entry(s, user_id, pr.day, e["slot"], e["food_code"], e["grams"], e.get("source", "chat"),
-                         commit=False)
+        IN.add_entries(s, user_id, pr.day, [{**e, "source": e.get("source", "chat")} for e in pr.intake],
+                       commit=False)
         row.applied = True
         s.commit()
         return {"day": pr.day.isoformat(), "version": None, "regenerated_days": []}

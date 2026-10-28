@@ -1,10 +1,10 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { api, del, post } from "../api/client";
-import { useFoodNames, useFoods } from "../api/hooks";
+import { useDishes, useFoodNames, useFoods } from "../api/hooks";
 import { errorMessage, fmt, useI18n } from "../i18n";
 import { foldText as fold } from "../format";
-import type { Dish, DislikeRow } from "../types";
+import type { DislikeRow } from "../types";
 
 const MAX_RESULTS = 8;
 
@@ -14,7 +14,7 @@ export function DislikesSection() {
   const qc = useQueryClient();
   const list = useQuery({ queryKey: ["dislikes"], queryFn: () => api<DislikeRow[]>("/preferences/dislikes") });
   const foods = useFoods();
-  const dishes = useQuery({ queryKey: ["dishes"], staleTime: 60 * 60_000, queryFn: () => api<Dish[]>("/dishes") });
+  const dishes = useDishes();
   const foodName = useFoodNames();
   const [q, setQ] = useState("");
   const [err, setErr] = useState<string | null>(null);

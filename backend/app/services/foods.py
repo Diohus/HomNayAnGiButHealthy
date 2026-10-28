@@ -95,3 +95,8 @@ def list_foods(s: Session, user_id: uuid.UUID) -> list[dict]:
         reason = exclusion_reason(f, p.allergies, p.diets) if p else None
         out.append({**f.model_dump(), "role": full.role(f.code), "excluded_reason": reason})
     return out
+
+
+def list_dishes(s: Session) -> list[dict]:
+    return [{"code": d.code, "name_vi": d.name_vi, "name_en": d.name_en or d.name_vi, "main": d.main, "slots": d.slots}
+            for d in foods_repo.global_catalog(s).dishes.values()]
